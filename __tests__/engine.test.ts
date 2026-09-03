@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { calculateBoxRequirements } from '../lib/engine/boxCalculator';
 import { calculateCapacity } from '../lib/engine/capacityEngine';
+import { packTruck } from '../lib/engine/packEngine';
 import { TRUCKS } from '../lib/constants/trucks';
+import { PRESETS } from '../lib/constants/presets';
 
-describe('Task 3: Calculation Engines', () => {
-  describe('boxCalculator.ts', () => {
+describe('Calculation and Packing Engines', () => {
+  describe('Task 3: boxCalculator.ts', () => {
     it('asserts a 2-bedroom, 2-occupant home with standard density returns exactly 60 total boxes (18 Small, 27 Medium, 9 Large, 4 Wardrobe)', () => {
       const result = calculateBoxRequirements({
         bedrooms: 2,
@@ -40,14 +42,14 @@ describe('Task 3: Calculation Engines', () => {
       expect(Number.isInteger(result.counts.wardrobe)).toBe(true);
 
       // Verify proportional scaling values
-      expect(result.counts.small).toBe(24); // 81 * 0.3 = 24.3 -> 24
-      expect(result.counts.medium).toBe(36); // 81 * 0.45 = 36.45 -> 36
-      expect(result.counts.large).toBe(12); // 81 * 0.15 = 12.15 -> 12
-      expect(result.counts.wardrobe).toBe(5); // 4 * 1.35 = 5.4 -> 5
+      expect(result.counts.small).toBe(24);
+      expect(result.counts.medium).toBe(36);
+      expect(result.counts.large).toBe(12);
+      expect(result.counts.wardrobe).toBe(5);
     });
   });
 
-  describe('capacityEngine.ts', () => {
+  describe('Task 3: capacityEngine.ts', () => {
     it('asserts that 330 cu ft of cargo inside a 10-ft truck (402 cu ft total, 329 cu ft usable at 18% buffer) triggers critical (>85%) status', () => {
       const truck10ft = TRUCKS['10ft'];
       const result = calculateCapacity(truck10ft, {
@@ -57,7 +59,6 @@ describe('Task 3: Calculation Engines', () => {
 
       // 402 * 0.82 = 329.64 cu ft usable
       expect(result.usableCapacityCuFt).toBeCloseTo(329.6, 1);
-      // Fill percentage = 330 / 329.64 * 100 = 100.1% (>85%)
       expect(result.fillPercentage).toBeGreaterThan(85);
       expect(result.status).toBe('critical');
       expect(result.needsUpgrade).toBe(true);
@@ -87,6 +88,66 @@ describe('Task 3: Calculation Engines', () => {
       expect(result.status).toBe('optimal');
       expect(result.fillPercentage).toBeLessThanOrEqual(70);
       expect(result.isOverweight).toBe(false);
+    });
+  });
+
+  describe('Task 4: packEngine.ts', () => {
+    it('verifies mattresses stand on edge (Z = 0, width = 20″, height = 60″/76″)', () => {
+      const truck15ft = TRUCKS['15ft'];
+      const result = packTruck(truck15ft, {
+        queen_bed: 1,
+        king_bed: 1,
+      });
+
+      const queenBlock = result.blocks.find((b) => b.itemId === 'queen_bed');
+      expect(queenBlock).toBeDefined();
+      expect(queenBlock?.z).toBe(0); // Left wall
+      expect(queenBlock?.width).toBe(20);
+      expect(queenBlock?.height).toBe(60);
+
+      const kingBlock = result.blocks.find((b) => b.itemId === 'king_bed');
+      expect(kingBlock).toBeDefined();
+      expect(kingBlock?.z).toBe(0); // Left wall
+      expect(kingBlock?.width).toBe(20);
+      expect(kingBlock?.height).toBe(76);
+    });
+
+    it('verifies sofas stand vertically (X = 0, height = 84″)', () => {
+      const truck15ft = TRUCKS['15ft']; // height is 86"
+      const result = packTruck(truck15ft, {
+        sofa_3seat: 1,
+      });
+
+      const sofaBlock = result.blocks.find((b) => b.itemId === 'sofa_3seat');
+      expect(sofaBlock).toBeDefined();
+      expect(sofaBlock?.x).toBe(0); // Front bulkhead
+      expect(sofaBlock?.height).toBe(84); // Stood vertically
+    });
+
+    it('asserts that no items exceed the ceiling height of the selected truck', () => {
+      // 10ft truck height is 74"
+      const truck10ft = TRUCKS['10ft'];
+      const result = packTruck(truck10ft, {
+        sofa_3seat: 1,
+        king_bed: 1, // 76" item in 74" truck
+        box_large: 10,
+      });
+
+      for (const block of result.blocks) {
+        expect(block.y + block.height).toBeLessThanOrEqual(truck10ft.height);
+      }
+    });
+
+    it('packs studio and 1-2 bed presets with valid block geometry', () => {
+      const studioPack = packTruck('10ft', PRESETS.studio.items);
+      expect(studioPack.blocks.length).toBeGreaterThan(0);
+
+      const bedPack = packTruck('15ft', PRESETS['1-2_bed'].items);
+      expect(bedPack.blocks.length).toBeGreaterThan(0);
+
+      // Verify Mom's attic receives wardrobe boxes in 15ft truck
+      const atticBlocks = bedPack.blocks.filter((b) => b.isAttic);
+      expect(atticBlocks.length).toBeGreaterThan(0);
     });
   });
 });

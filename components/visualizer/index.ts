@@ -1,2 +1,2 @@
-// Visualizer components: TruckCanvas, CapacityGauge, Inspector
-export {};
+export * from './TruckCanvas';
+export * from './CapacityGauge';
