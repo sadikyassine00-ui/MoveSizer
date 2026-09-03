@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { TruckSpec } from '@/lib/constants/trucks';
 import { DrawableBlock } from '@/lib/engine/packEngine';
+import { ZoomIn, ZoomOut, RotateCcw, Move } from 'lucide-react';
 
 interface TruckCanvasProps {
   truck: TruckSpec;
@@ -77,11 +78,29 @@ export function TruckCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const [hoveredBlock, setHoveredBlock] = useState<DrawableBlock | null>(null);
-  const [mousePos, setMousePos] = useState<Point2D | null>(null);
+  // Viewport dimensions
   const [dimensions, setDimensions] = useState({ width: 900, height: 580 });
 
+  // Interactive Camera State (Smooth Pan & Zoom)
+  const [userScale, setUserScale] = useState<number>(1.0);
+  const [panOffset, setPanOffset] = useState<Point2D>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const dragStartRef = useRef<Point2D>({ x: 0, y: 0 });
+  const hasDraggedRef = useRef<boolean>(false);
+
+  // Block hover state
+  const [hoveredBlock, setHoveredBlock] = useState<DrawableBlock | null>(null);
+  const [mousePos, setMousePos] = useState<Point2D | null>(null);
+
+  // Projected polygons cache for pixel-perfect raycasting
   const projectedCacheRef = useRef<BlockProjectedFaces[]>([]);
+
+  // Base projection parameters ref
+  const baseMetricsRef = useRef<{
+    baseScale: number;
+    midX: number;
+    midY: number;
+  }>({ baseScale: 1, midX: 0, midY: 0 });
 
   // Update canvas sizing based on container
   useEffect(() => {
@@ -122,40 +141,39 @@ export function TruckCanvas({
     ctx.clearRect(0, 0, width, height);
 
     // =========================================================================
-    // DIMENSIONS & PROJECTION ENVELOPE
-    // In 30° Isometric View:
-    // - Z = 0 is the far/back left wall.
-    // - Z = truckW is the FOREGROUND / NEAR-SIDE facing the camera directly.
-    // - The visible wheels MUST sit at Z = truckW (foreground), below floor deck (Y < 0).
-    // - The far-side wheels at Z = 0 are occluded and CULLED.
+    // 1. VEHICLE DIMENSIONS & FRAMING ENVELOPE
+    // Modeled after Ford E-450 / Chevy Express commercial cutaway truck chassis
     // =========================================================================
     const truckL = truck.length;
     const truckW = truck.width;
     const truckH = truck.height;
 
-    // Vehicle constants in inches
-    const cabFrontX = -55;       // Cab bumper at X = -55"
-    const chassisDropY = -18;    // Steel I-beam depth under cargo floor
-    const groundY = -34;         // Ground plane (tires touch ground at Y = -34")
-    const cabRoofY = Math.min(50, truck.hasAttic ? truckH - 30 : 50);
-    const hoodTopY = 30;
+    // Commercial Cab Coordinates (in inches)
+    const cabFrontX = -56;       // Nose / Bumper forward of cargo bulkhead
+    const cowlX = -26;           // Base of windshield / hood cowl
+    const cabRoofX = -12;        // Top of windshield / roof peak
+    const chassisDropY = -18;    // Steel chassis frame under floor
+    const groundY = -34;         // Ground plane (tire contact patch)
+    const hoodTopY = 28;         // Top of hood cowl
+    const noseTopY = 22;         // Nose edge above grille
+    const cabRoofY = 52;         // Standard E-450 cab roof height
 
-    // Axle positions
-    const frontAxleX = -35;
+    // Axles
+    const frontAxleX = -36;
     const rearAxleX = Math.round(truckL * 0.74);
     const hasDualRear = truckL >= 300;
     const rearAxles = hasDualRear ? [rearAxleX - 18, rearAxleX + 18] : [rearAxleX];
 
     // Framing envelope in 3D:
     const envelope = [
-      { x: cabFrontX - 10, y: groundY - 5, z: 0 },
-      { x: truckL + 15, y: groundY - 5, z: 0 },
-      { x: truckL + 15, y: groundY - 5, z: truckW + 5 },
-      { x: cabFrontX - 10, y: groundY - 5, z: truckW + 5 },
-      { x: cabFrontX - 10, y: truckH + 10, z: 0 },
-      { x: truckL + 15, y: truckH + 10, z: 0 },
-      { x: truckL + 15, y: truckH + 10, z: truckW + 5 },
-      { x: cabFrontX - 10, y: truckH + 10, z: truckW + 5 },
+      { x: cabFrontX - 12, y: groundY - 6, z: 0 },
+      { x: truckL + 16, y: groundY - 6, z: 0 },
+      { x: truckL + 16, y: groundY - 6, z: truckW + 8 },
+      { x: cabFrontX - 12, y: groundY - 6, z: truckW + 8 },
+      { x: cabFrontX - 12, y: truckH + 12, z: 0 },
+      { x: truckL + 16, y: truckH + 12, z: 0 },
+      { x: truckL + 16, y: truckH + 12, z: truckW + 8 },
+      { x: cabFrontX - 12, y: truckH + 12, z: truckW + 8 },
     ];
 
     let minProjX = Infinity, maxProjX = -Infinity;
@@ -170,23 +188,28 @@ export function TruckCanvas({
       if (py > maxProjY) maxProjY = py;
     }
 
-    const marginX = 65;
-    const marginY = 65;
+    const marginX = 70;
+    const marginY = 70;
     const availWidth = width - marginX * 2;
     const availHeight = height - marginY * 2;
 
-    const scale = Math.min(availWidth / (maxProjX - minProjX), availHeight / (maxProjY - minProjY));
-
+    const baseScale = Math.min(availWidth / (maxProjX - minProjX), availHeight / (maxProjY - minProjY));
     const midX = (minProjX + maxProjX) / 2;
     const midY = (minProjY + maxProjY) / 2;
 
-    const offsetX = width / 2 - midX * scale;
-    const offsetY = height / 2 - midY * scale + 15;
+    baseMetricsRef.current = { baseScale, midX, midY };
+
+    // Apply interactive user scale & camera pan
+    const scale = baseScale * userScale;
+    const offsetX = width / 2 - midX * scale + panOffset.x;
+    const offsetY = height / 2 - midY * scale + 15 + panOffset.y;
 
     const proj = (x: number, y: number, z: number) =>
       project3DTo2D(x, y, z, scale, offsetX, offsetY);
 
-    // Helper: Draw 3D Prism
+    // =========================================================================
+    // HELPER: DRAW 3D PRISM (Crisp Architectural CAD Linework)
+    // =========================================================================
     const drawPrism = (
       x: number,
       y: number,
@@ -248,12 +271,12 @@ export function TruckCanvas({
     };
 
     // =========================================================================
-    // STAGE 1: GROUND DROP SHADOW (Asphalt Ground Plane Y = -34)
+    // STAGE 1: GROUND DROP SHADOW (Soft Asphalt Ambient Occlusion)
     // =========================================================================
-    const gP0 = proj(cabFrontX - 8, groundY, 0);
-    const gPL = proj(truckL + 12, groundY, 0);
-    const gPLW = proj(truckL + 12, groundY, truckW + 8);
-    const gPW = proj(cabFrontX - 8, groundY, truckW + 8);
+    const gP0 = proj(cabFrontX - 10, groundY, 0);
+    const gPL = proj(truckL + 14, groundY, 0);
+    const gPLW = proj(truckL + 14, groundY, truckW + 10);
+    const gPW = proj(cabFrontX - 10, groundY, truckW + 10);
 
     ctx.save();
     ctx.beginPath();
@@ -262,18 +285,18 @@ export function TruckCanvas({
     ctx.lineTo(gPLW.x, gPLW.y);
     ctx.lineTo(gPW.x, gPW.y);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.48)';
     ctx.filter = 'blur(12px)';
     ctx.fill();
     ctx.filter = 'none';
     ctx.restore();
 
-    // Contact patch shadows directly under near-side tires (Z = truckW)
+    // Dark rubber contact patch shadows under near-side tires
     const drawTirePatch = (axleX: number) => {
       const pNear = proj(axleX, groundY, truckW);
       ctx.beginPath();
-      ctx.ellipse(pNear.x, pNear.y, 14 * scale, 4 * scale, 0, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+      ctx.ellipse(pNear.x, pNear.y, 15 * scale, 4.5 * scale, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
       ctx.fill();
     };
     drawTirePatch(frontAxleX);
@@ -282,23 +305,22 @@ export function TruckCanvas({
     }
 
     // =========================================================================
-    // STAGE 2: UNDER-FLOOR CHASSIS RAILS (Steel I-Beams Y < 0)
-    // - Far chassis rail at Z = 10 (far side, under deck)
-    // - Far wheels (Z = 0) are occluded by the solid floor and body, so they are CULLED!
+    // STAGE 2: UNDER-FLOOR CHASSIS RAILS (Dark Steel I-Beams Y < 0)
+    // Far-side wheels (Z = 0) are physically occluded and CULLED from view.
     // =========================================================================
     const railWidth = 4;
     const railHeight = 16;
-    const railStartLength = truckL + 45; // from X = -45 to truckL
+    const railStartLength = truckL + 46;
 
     // Far chassis rail (under floor at Z = 10)
-    drawPrism(-45, chassisDropY, 10, railStartLength, railHeight, railWidth, {
+    drawPrism(-46, chassisDropY, 10, railStartLength, railHeight, railWidth, {
       top: '#1E222A',
       right: '#14171D',
       front: '#0E1014',
       stroke: '#272C38',
     });
 
-    // Cross-members connecting rails under the floor deck
+    // Transverse structural cross-members under cargo deck
     for (let cx = 12; cx < truckL; cx += 48) {
       drawPrism(cx, chassisDropY + 4, 12, 4, 8, truckW - 24, {
         top: '#191D24',
@@ -309,7 +331,7 @@ export function TruckCanvas({
     }
 
     // Near chassis rail (under floor at Z = truckW - 14)
-    drawPrism(-45, chassisDropY, truckW - 14, railStartLength, railHeight, railWidth, {
+    drawPrism(-46, chassisDropY, truckW - 14, railStartLength, railHeight, railWidth, {
       top: '#242933',
       right: '#181B22',
       front: '#101318',
@@ -318,7 +340,7 @@ export function TruckCanvas({
 
     // =========================================================================
     // STAGE 3: SOLID CARGO FLOOR DECK (Solid Opaque Plate at Y = 0)
-    // Perfectly covers and isolates undercarriage from cargo
+    // Completely occludes undercarriage rails from interior cargo
     // =========================================================================
     const p0 = proj(0, 0, 0);
     const pL = proj(truckL, 0, 0);
@@ -331,7 +353,7 @@ export function TruckCanvas({
     ctx.lineTo(pLW.x, pLW.y);
     ctx.lineTo(pW.x, pW.y);
     ctx.closePath();
-    ctx.fillStyle = '#0D0E12'; // Solid opaque floor
+    ctx.fillStyle = '#0D0E12'; // Solid opaque plate
     ctx.fill();
     ctx.strokeStyle = '#27272A';
     ctx.lineWidth = 1;
@@ -362,95 +384,74 @@ export function TruckCanvas({
     }
 
     // =========================================================================
-    // STAGE 5: DRIVER CABIN, HOOD & WIND DEFLECTOR (X < 0)
-    // Drawn BEFORE cargo items so cargo at bulkhead stays cleanly inside
+    // STAGE 5: REALISTIC COMMERCIAL CABIN REDESIGN (Ford E-450 Cutaway Spec)
+    // Drawn BEFORE cargo items so cargo at bulkhead sits inside the truck
     // =========================================================================
     const cabWidth = truckW - 10;
     const cabZ = 5;
+    const nearCabZ = cabZ + cabWidth; // Near side of cabin facing camera
 
-    // 1. Cab Lower Base & Doors (X = -25 to 0, Y = chassisDropY to cabRoofY)
-    drawPrism(-25, chassisDropY, cabZ, 25, cabRoofY - chassisDropY, cabWidth, {
-      top: '#232730',
-      right: '#1A1D24',
+    // 1. Lower Cab Body & Floor Base (X = cowlX to 0, Y = chassisDropY to 28)
+    drawPrism(cowlX, chassisDropY, cabZ, -cowlX, 28 - chassisDropY, cabWidth, {
+      top: '#262A33',
+      right: '#1B1E25',
       front: '#121419',
-      stroke: '#2E3442',
+      stroke: '#323846',
     });
 
-    // 2. Aerodynamic Cab-Over Wind Deflector
-    const fairingTopY = truck.hasAttic ? truckH - (truck.attic?.height || 30) : Math.min(cabRoofY + 24, truckH);
-    if (fairingTopY > cabRoofY) {
-      const fTopNear = proj(0, fairingTopY, cabZ + cabWidth);
-      const fTopFar = proj(0, fairingTopY, cabZ);
-      const fRoofFar = proj(-25, cabRoofY, cabZ);
-      const fRoofNear = proj(-25, cabRoofY, cabZ + cabWidth);
+    // 2. Cab Upper Enclosure & Doors (X = cowlX to 0, Y = 28 to cabRoofY)
+    drawPrism(cowlX, 28, cabZ, -cowlX, cabRoofY - 28, cabWidth, {
+      top: '#2E333F',
+      right: '#20242D',
+      front: '#15181E',
+      stroke: '#3A4252',
+    });
 
-      // Sloped Fairing Surface
-      ctx.beginPath();
-      ctx.moveTo(fRoofFar.x, fRoofFar.y);
-      ctx.lineTo(fRoofNear.x, fRoofNear.y);
-      ctx.lineTo(fTopNear.x, fTopNear.y);
-      ctx.lineTo(fTopFar.x, fTopFar.y);
-      ctx.closePath();
-      ctx.fillStyle = '#2A2F3B';
-      ctx.fill();
-      ctx.strokeStyle = '#363D4D';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+    // 3. Sloped Aerodynamic Hood (X = cabFrontX to cowlX, sloping from noseTopY to hoodTopY)
+    // Draw hood lower block (chassisDropY to noseTopY)
+    drawPrism(cabFrontX, chassisDropY, cabZ, cowlX - cabFrontX, noseTopY - chassisDropY, cabWidth, {
+      top: '#242831',
+      right: '#191C22',
+      front: '#101217',
+      stroke: '#2F3542',
+    });
 
-      // Side Triangle Panel (Near Side, Z = cabZ + cabWidth)
-      const fBaseNear = proj(0, cabRoofY, cabZ + cabWidth);
-      ctx.beginPath();
-      ctx.moveTo(fRoofNear.x, fRoofNear.y);
-      ctx.lineTo(fTopNear.x, fTopNear.y);
-      ctx.lineTo(fBaseNear.x, fBaseNear.y);
-      ctx.closePath();
-      ctx.fillStyle = '#1D2128';
-      ctx.fill();
-      ctx.strokeStyle = '#2E3442';
-      ctx.stroke();
-    }
+    // Sloped Hood Top Wedge (from noseTopY at cabFrontX to hoodTopY at cowlX)
+    const hdNoseNear = proj(cabFrontX, noseTopY, nearCabZ);
+    const hdNoseFar = proj(cabFrontX, noseTopY, cabZ);
+    const hdCowlFar = proj(cowlX, hoodTopY, cabZ);
+    const hdCowlNear = proj(cowlX, hoodTopY, nearCabZ);
 
-    // Side Door & Window on NEAR side of cab (Z = cabZ + cabWidth = truckW - 5, facing camera)
-    const nearCabZ = cabZ + cabWidth;
-    const sw1 = proj(-22, 28, nearCabZ);
-    const sw2 = proj(-4, 28, nearCabZ);
-    const sw3 = proj(-4, 45, nearCabZ);
-    const sw4 = proj(-22, 45, nearCabZ);
+    // Hood Top Surface
     ctx.beginPath();
-    ctx.moveTo(sw1.x, sw1.y);
-    ctx.lineTo(sw2.x, sw2.y);
-    ctx.lineTo(sw3.x, sw3.y);
-    ctx.lineTo(sw4.x, sw4.y);
+    ctx.moveTo(hdNoseNear.x, hdNoseNear.y);
+    ctx.lineTo(hdNoseFar.x, hdNoseFar.y);
+    ctx.lineTo(hdCowlFar.x, hdCowlFar.y);
+    ctx.lineTo(hdCowlNear.x, hdCowlNear.y);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+    ctx.fillStyle = '#2C313C';
     ctx.fill();
-    ctx.strokeStyle = '#38BDF8';
+    ctx.strokeStyle = '#394050';
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Door seam line on near cab side
-    const ds1 = proj(-23, chassisDropY, nearCabZ);
-    const ds2 = proj(-23, 26, nearCabZ);
+    // Hood Near Side Wedge
+    const hdBaseNear = proj(cowlX, noseTopY, nearCabZ);
     ctx.beginPath();
-    ctx.moveTo(ds1.x, ds1.y);
-    ctx.lineTo(ds2.x, ds2.y);
-    ctx.strokeStyle = '#272B35';
-    ctx.lineWidth = 1;
+    ctx.moveTo(hdNoseNear.x, hdNoseNear.y);
+    ctx.lineTo(hdCowlNear.x, hdCowlNear.y);
+    ctx.lineTo(hdBaseNear.x, hdBaseNear.y);
+    ctx.closePath();
+    ctx.fillStyle = '#1E2129';
+    ctx.fill();
+    ctx.strokeStyle = '#323846';
     ctx.stroke();
 
-    // 3. Engine Hood (X = -55 to -25, Y = chassisDropY to hoodTopY)
-    drawPrism(cabFrontX, chassisDropY, cabZ, 30, hoodTopY - chassisDropY, cabWidth, {
-      top: '#262B35',
-      right: '#1A1D24',
-      front: '#121419',
-      stroke: '#32394A',
-    });
-
-    // 4. Sloped Windshield
-    const wsTopNear = proj(-25, cabRoofY, nearCabZ - 2);
-    const wsTopFar = proj(-25, cabRoofY, cabZ + 2);
-    const wsBottomFar = proj(-42, hoodTopY, cabZ + 2);
-    const wsBottomNear = proj(-42, hoodTopY, nearCabZ - 2);
+    // 4. Sloped 48° Raked Windshield & A-Pillars
+    const wsTopNear = proj(cabRoofX, cabRoofY - 2, nearCabZ - 3);
+    const wsTopFar = proj(cabRoofX, cabRoofY - 2, cabZ + 3);
+    const wsBottomFar = proj(cowlX - 1, hoodTopY + 1, cabZ + 3);
+    const wsBottomNear = proj(cowlX - 1, hoodTopY + 1, nearCabZ - 3);
 
     ctx.beginPath();
     ctx.moveTo(wsTopFar.x, wsTopFar.y);
@@ -458,53 +459,200 @@ export function TruckCanvas({
     ctx.lineTo(wsBottomNear.x, wsBottomNear.y);
     ctx.lineTo(wsBottomFar.x, wsBottomFar.y);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.fillStyle = 'rgba(14, 165, 233, 0.08)'; // Subtle automotive cyan glass tint
     ctx.fill();
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.55)';
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Specular diagonal line across windshield
-    const spec1 = proj(-27, cabRoofY - 3, cabZ + cabWidth * 0.4);
-    const spec2 = proj(-40, hoodTopY + 2, cabZ + cabWidth * 0.4);
+    // Windshield Top Sunband Tint Strip
+    const sunbandNear = proj(cabRoofX - (cowlX - cabRoofX) * 0.22, cabRoofY - 8, nearCabZ - 3);
+    const sunbandFar = proj(cabRoofX - (cowlX - cabRoofX) * 0.22, cabRoofY - 8, cabZ + 3);
+    ctx.beginPath();
+    ctx.moveTo(wsTopFar.x, wsTopFar.y);
+    ctx.lineTo(wsTopNear.x, wsTopNear.y);
+    ctx.lineTo(sunbandNear.x, sunbandNear.y);
+    ctx.lineTo(sunbandFar.x, sunbandFar.y);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(14, 165, 233, 0.22)';
+    ctx.fill();
+
+    // Specular diagonal highlight across windshield
+    const spec1 = proj(cabRoofX - 3, cabRoofY - 4, cabZ + cabWidth * 0.45);
+    const spec2 = proj(cowlX + 2, hoodTopY + 3, cabZ + cabWidth * 0.45);
     ctx.beginPath();
     ctx.moveTo(spec1.x, spec1.y);
     ctx.lineTo(spec2.x, spec2.y);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // 5. Front Bumper & Grille (X = cabFrontX)
-    drawPrism(cabFrontX - 4, chassisDropY, cabZ - 2, 4, 16, cabWidth + 4, {
-      top: '#2E333D',
-      right: '#1B1E24',
-      front: '#111317',
-      stroke: '#3B4250',
+    // 5. Driver Door, Window, Handle & Entry Running Board (Near Side $Z = nearCabZ$)
+    // Driver side window (trapezoidal commercial window)
+    const dw1 = proj(cowlX + 3, 33, nearCabZ);
+    const dw2 = proj(-3, 33, nearCabZ);
+    const dw3 = proj(-3, cabRoofY - 4, nearCabZ);
+    const dw4 = proj(cabRoofX + 1, cabRoofY - 4, nearCabZ);
+    ctx.beginPath();
+    ctx.moveTo(dw1.x, dw1.y);
+    ctx.lineTo(dw2.x, dw2.y);
+    ctx.lineTo(dw3.x, dw3.y);
+    ctx.lineTo(dw4.x, dw4.y);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.fill();
+    ctx.strokeStyle = '#38BDF8';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Door shut-lines / contour
+    const dl1 = proj(-2, chassisDropY, nearCabZ);
+    const dl2 = proj(-2, cabRoofY, nearCabZ);
+    ctx.beginPath();
+    ctx.moveTo(dl1.x, dl1.y);
+    ctx.lineTo(dl2.x, dl2.y);
+    ctx.strokeStyle = '#181A20';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    const dl3 = proj(cowlX + 1, chassisDropY, nearCabZ);
+    const dl4 = proj(cowlX + 1, 33, nearCabZ);
+    ctx.beginPath();
+    ctx.moveTo(dl3.x, dl3.y);
+    ctx.lineTo(dl4.x, dl4.y);
+    ctx.strokeStyle = '#181A20';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    // Recessed Black Commercial Door Handle
+    const dh = proj(-9, 31, nearCabZ);
+    ctx.beginPath();
+    ctx.rect(dh.x - 4 * scale, dh.y - 1.5 * scale, 8 * scale, 3 * scale);
+    ctx.fillStyle = '#111317';
+    ctx.fill();
+    ctx.strokeStyle = '#3F3F46';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Lower Cab Entry Running Board / Step (under door)
+    drawPrism(cowlX + 2, -23, nearCabZ - 2, 20, 4, 5, {
+      top: '#2C303B',
+      right: '#1E2229',
+      front: '#14161C',
+      stroke: '#3F4657',
     });
 
-    for (let gy = 8; gy <= 24; gy += 4) {
-      const gStart = proj(cabFrontX, gy, cabZ + 8);
-      const gEnd = proj(cabFrontX, gy, cabZ + cabWidth - 8);
+    // Commercial Dual-Glass Towing Side Mirror Assembly
+    const mMount = proj(cowlX + 3, 36, nearCabZ);
+    const mArmEnd = proj(cowlX + 1, 36, nearCabZ + 7);
+    ctx.beginPath();
+    ctx.moveTo(mMount.x, mMount.y);
+    ctx.lineTo(mArmEnd.x, mArmEnd.y);
+    ctx.strokeStyle = '#181A20';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Mirror Head Housing
+    drawPrism(cowlX - 2, 30, nearCabZ + 5, 4, 15, 3, {
+      top: '#22252D',
+      right: '#181A20',
+      front: '#0F1116',
+      stroke: '#38BDF8',
+      lineWidth: 1,
+    });
+
+    // 6. Front Grille, Headlights, and Steel Bumper (X = cabFrontX)
+    // Commercial Radiator Grille
+    const grilleTop = noseTopY - 2;
+    const grilleBottom = -6;
+    drawPrism(cabFrontX - 2, grilleBottom, cabZ + 6, 2, grilleTop - grilleBottom, cabWidth - 12, {
+      top: '#1A1D24',
+      right: '#111318',
+      front: '#0B0C0E',
+      stroke: '#282E39',
+    });
+
+    // Horizontal grille slats
+    for (let gy = grilleBottom + 3; gy < grilleTop; gy += 3.5) {
+      const gStart = proj(cabFrontX - 2, gy, cabZ + 8);
+      const gEnd = proj(cabFrontX - 2, gy, nearCabZ - 8);
       ctx.beginPath();
       ctx.moveTo(gStart.x, gStart.y);
       ctx.lineTo(gEnd.x, gEnd.y);
-      ctx.strokeStyle = '#0B0C0F';
+      ctx.strokeStyle = '#050608';
       ctx.lineWidth = 1.5;
       ctx.stroke();
     }
 
-    // Amber Indicator Micro-Dots
-    const amberNear = proj(cabFrontX, 24, nearCabZ - 1);
+    // Dual Composite Headlights & Amber Turn Markers
+    // Near headlight (facing camera)
+    drawPrism(cabFrontX - 2.5, 4, nearCabZ - 7, 2.5, 12, 6, {
+      top: '#3E4452',
+      right: '#282C35',
+      front: 'rgba(255, 255, 255, 0.85)',
+      stroke: '#38BDF8',
+    });
+    const amberNear = proj(cabFrontX - 2.5, 14, nearCabZ - 2);
     ctx.beginPath();
-    ctx.arc(amberNear.x, amberNear.y, Math.max(1.5, scale * 1.2), 0, Math.PI * 2);
+    ctx.arc(amberNear.x, amberNear.y, Math.max(2, scale * 1.5), 0, Math.PI * 2);
     ctx.fillStyle = '#F59E0B';
     ctx.fill();
 
-    const amberFar = proj(cabFrontX, 24, cabZ + 1);
+    // Far headlight
+    drawPrism(cabFrontX - 2.5, 4, cabZ + 1, 2.5, 12, 6, {
+      top: '#3E4452',
+      right: '#282C35',
+      front: 'rgba(255, 255, 255, 0.85)',
+      stroke: '#38BDF8',
+    });
+    const amberFar = proj(cabFrontX - 2.5, 14, cabZ + 1);
     ctx.beginPath();
-    ctx.arc(amberFar.x, amberFar.y, Math.max(1.5, scale * 1.2), 0, Math.PI * 2);
+    ctx.arc(amberFar.x, amberFar.y, Math.max(2, scale * 1.5), 0, Math.PI * 2);
     ctx.fillStyle = '#F59E0B';
     ctx.fill();
+
+    // Heavy-Duty Wrap-Around Commercial Front Bumper (X = cabFrontX - 6)
+    drawPrism(cabFrontX - 6, chassisDropY - 4, cabZ - 2, 6, 16, cabWidth + 4, {
+      top: '#2B2F38',
+      right: '#1B1E24',
+      front: '#101216',
+      stroke: '#3B4352',
+      lineWidth: 1.2,
+    });
+
+    // 7. Aerodynamic Cab-Over Wind Deflector (Mom's Attic Transition)
+    const fairingTopY = truck.hasAttic ? truckH - (truck.attic?.height || 30) : Math.min(cabRoofY + 28, truckH);
+    if (fairingTopY > cabRoofY) {
+      const fTopNear = proj(0, fairingTopY, nearCabZ);
+      const fTopFar = proj(0, fairingTopY, cabZ);
+      const fRoofFar = proj(cabRoofX, cabRoofY, cabZ);
+      const fRoofNear = proj(cabRoofX, cabRoofY, nearCabZ);
+
+      // Curved sloped fairing surface
+      ctx.beginPath();
+      ctx.moveTo(fRoofFar.x, fRoofFar.y);
+      ctx.lineTo(fRoofNear.x, fRoofNear.y);
+      ctx.lineTo(fTopNear.x, fTopNear.y);
+      ctx.lineTo(fTopFar.x, fTopFar.y);
+      ctx.closePath();
+      ctx.fillStyle = '#282C36';
+      ctx.fill();
+      ctx.strokeStyle = '#383F4E';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Near-side aerodynamic fairing triangular flank
+      const fBaseNear = proj(0, cabRoofY, nearCabZ);
+      ctx.beginPath();
+      ctx.moveTo(fRoofNear.x, fRoofNear.y);
+      ctx.lineTo(fTopNear.x, fTopNear.y);
+      ctx.lineTo(fBaseNear.x, fBaseNear.y);
+      ctx.closePath();
+      ctx.fillStyle = '#1D2027';
+      ctx.fill();
+      ctx.strokeStyle = '#313745';
+      ctx.stroke();
+    }
 
     // =========================================================================
     // STAGE 6: CARGO ITEMS (DEPTH-SORTED BACK-TO-FRONT: x + z + y)
@@ -584,14 +732,14 @@ export function TruckCanvas({
         ctx.restore();
       }
 
-      // Block Label (Clean Swiss Sans)
+      // Block Monospace/Sans Label
       const topCenterX = (v4.x + v5.x + v6.x + v7.x) / 4;
       const topCenterY = (v4.y + v5.y + v6.y + v7.y) / 4;
 
       const projectedWidth = Math.abs(v6.x - v4.x);
-      if (projectedWidth > 28) {
+      if (projectedWidth > 26) {
         ctx.save();
-        const fontSize = Math.max(9, Math.min(11, Math.floor(projectedWidth / 7.5)));
+        const fontSize = Math.max(9, Math.min(12, Math.floor(projectedWidth / 7.5)));
         ctx.font = `600 ${fontSize}px var(--font-sans), sans-serif`;
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'center';
@@ -737,16 +885,13 @@ export function TruckCanvas({
     });
 
     // =========================================================================
-    // STAGE 8: VISIBLE NEAR-SIDE WHEELS (Z = truckW, FACING THE CAMERA)
-    // - Anchored strictly at Y < 0 (below floor deck line)
-    // - Outer tire face is at Z = truckW (the camera-facing near side)
-    // - Extruded inward along Z towards truckW - 7
-    // - Never overlaps cargo, positioned on the correct visible side of truck
+    // STAGE 8: VISIBLE NEAR-SIDE WHEELS (Z = truckW, Camera-Facing)
+    // Anchored strictly at Y <= 0 under flared commercial wheel arches
     // =========================================================================
-    const drawNearForegroundWheel = (axleX: number) => {
+    const drawCommercialWheel = (axleX: number) => {
       const wheelRadius = 15.5;
-      const wheelWidth = 7;
-      const centerY = -18.5; // Centerline of axle below deck
+      const wheelWidth = 8;
+      const centerY = -18.5; // Axle centerline below cargo floor
       const segments = 28;
 
       const outerPts: Point2D[] = [];
@@ -756,15 +901,30 @@ export function TruckCanvas({
         const theta = (i / segments) * Math.PI * 2;
         const wx = axleX + wheelRadius * Math.cos(theta);
         const wy = centerY + wheelRadius * Math.sin(theta);
-        // Outer face at Z = truckW (facing camera)
         outerPts.push(proj(wx, wy, truckW));
-        // Inner face extruded inward to Z = truckW - wheelWidth
         innerPts.push(proj(wx, wy, truckW - wheelWidth));
       }
 
-      // Tread sleeve connecting outer and inner rims
-      ctx.fillStyle = '#0F1115';
-      ctx.strokeStyle = '#181A20';
+      // Dark Inner Splash Guard / Wheel Well Liner
+      const fenderArchL = proj(axleX - 21, 0, truckW);
+      const fenderArchPeak = proj(axleX, 5, truckW);
+      const fenderArchR = proj(axleX + 21, 0, truckW);
+
+      ctx.beginPath();
+      ctx.moveTo(fenderArchL.x, fenderArchL.y);
+      ctx.quadraticCurveTo(fenderArchPeak.x, fenderArchPeak.y, fenderArchR.x, fenderArchR.y);
+      ctx.lineTo(fenderArchR.x, fenderArchR.y + 12 * scale);
+      ctx.lineTo(fenderArchL.x, fenderArchL.y + 12 * scale);
+      ctx.closePath();
+      ctx.fillStyle = '#090A0D';
+      ctx.fill();
+      ctx.strokeStyle = '#272C38';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // Tire Tread Sleeve (extrusion along Z)
+      ctx.fillStyle = '#0C0D10';
+      ctx.strokeStyle = '#17191F';
       ctx.lineWidth = 1;
 
       for (let i = 0; i < segments; i++) {
@@ -779,7 +939,7 @@ export function TruckCanvas({
         ctx.stroke();
       }
 
-      // Outer Face Tire
+      // Outer Tire Face
       ctx.beginPath();
       ctx.moveTo(outerPts[0].x, outerPts[0].y);
       for (let i = 1; i < segments; i++) {
@@ -792,7 +952,7 @@ export function TruckCanvas({
       ctx.lineWidth = 1.2;
       ctx.stroke();
 
-      // Steel Rim Disc
+      // Heavy-Duty Deep-Dish Commercial Steel Rim
       const rimRadius = wheelRadius * 0.62;
       const rimPts: Point2D[] = [];
       for (let i = 0; i < segments; i++) {
@@ -808,49 +968,37 @@ export function TruckCanvas({
         ctx.lineTo(rimPts[i].x, rimPts[i].y);
       }
       ctx.closePath();
-      ctx.fillStyle = '#3F3F46';
+      ctx.fillStyle = '#3F444E';
       ctx.fill();
-      ctx.strokeStyle = '#27272A';
+      ctx.strokeStyle = '#272C38';
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      // Hub Cap & 6 Lug Bolt Micro-Dots on outer rim face
+      // Recessed Center Hub Dust Cap
       const hubCenter = proj(axleX, centerY, truckW);
       ctx.beginPath();
-      ctx.arc(hubCenter.x, hubCenter.y, Math.max(2, scale * 2.8), 0, Math.PI * 2);
-      ctx.fillStyle = '#18181B';
+      ctx.arc(hubCenter.x, hubCenter.y, Math.max(2, scale * 3.2), 0, Math.PI * 2);
+      ctx.fillStyle = '#111317';
       ctx.fill();
 
-      const boltRadius = rimRadius * 0.45;
-      for (let b = 0; b < 6; b++) {
-        const bTheta = (b / 6) * Math.PI * 2;
+      // 8-Lug Chrome Nut Pattern
+      const boltRadius = rimRadius * 0.46;
+      for (let b = 0; b < 8; b++) {
+        const bTheta = (b / 8) * Math.PI * 2;
         const bx = axleX + boltRadius * Math.cos(bTheta);
         const by = centerY + boltRadius * Math.sin(bTheta);
         const bp = proj(bx, by, truckW);
 
         ctx.beginPath();
-        ctx.arc(bp.x, bp.y, Math.max(1, scale * 0.8), 0, Math.PI * 2);
-        ctx.fillStyle = '#A1A1AA';
+        ctx.arc(bp.x, bp.y, Math.max(1, scale * 0.9), 0, Math.PI * 2);
+        ctx.fillStyle = '#E4E4E7';
         ctx.fill();
       }
-
-      // Arched Wheel Well Cutout in the chassis skirt at Z = truckW
-      const wwL = proj(axleX - 19, 0, truckW);
-      const wwPeak = proj(axleX, 4, truckW);
-      const wwR = proj(axleX + 19, 0, truckW);
-
-      ctx.beginPath();
-      ctx.moveTo(wwL.x, wwL.y);
-      ctx.quadraticCurveTo(wwPeak.x, wwPeak.y, wwR.x, wwR.y);
-      ctx.strokeStyle = '#27272A';
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
     };
 
-    // Draw visible foreground wheels facing the camera (Z = truckW)
-    drawNearForegroundWheel(frontAxleX);
+    drawCommercialWheel(frontAxleX);
     for (const rAxle of rearAxles) {
-      drawNearForegroundWheel(rAxle);
+      drawCommercialWheel(rAxle);
     }
 
     // =========================================================================
@@ -897,11 +1045,56 @@ export function TruckCanvas({
 
     const dimHMid = proj(0, truckH / 2, -8);
     ctx.fillText(`${truck.height}″ Height`, dimHMid.x - 68, dimHMid.y);
-  }, [truck, blocks, selectedBlockId, hoveredBlock, dimensions]);
+  }, [truck, blocks, selectedBlockId, hoveredBlock, dimensions, userScale, panOffset]);
 
   useEffect(() => {
     render();
   }, [render]);
+
+  // =========================================================================
+  // CAMERA INTERACTIONS: WHEEL ZOOM (Focal Zoom on Mouse Point)
+  // =========================================================================
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const zoomFactor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+    const newScale = Math.max(0.4, Math.min(3.5, userScale * zoomFactor));
+
+    if (newScale === userScale) return;
+
+    const { baseScale, midX, midY } = baseMetricsRef.current;
+    const currentScale = baseScale * userScale;
+    const nextScale = baseScale * newScale;
+
+    const currentOffsetX = dimensions.width / 2 - midX * currentScale + panOffset.x;
+    const currentOffsetY = dimensions.height / 2 - midY * currentScale + 15 + panOffset.y;
+
+    // Preserve focal point under mouse
+    const ratio = nextScale / currentScale;
+    const nextOffsetX = mouseX - (mouseX - currentOffsetX) * ratio;
+    const nextOffsetY = mouseY - (mouseY - currentOffsetY) * ratio;
+
+    const nextPanX = nextOffsetX - (dimensions.width / 2 - midX * nextScale);
+    const nextPanY = nextOffsetY - (dimensions.height / 2 - midY * nextScale + 15);
+
+    setUserScale(newScale);
+    setPanOffset({ x: nextPanX, y: nextPanY });
+  };
+
+  // =========================================================================
+  // CAMERA INTERACTIONS: MOUSE DRAG PANNING & CLICK DETECTION
+  // =========================================================================
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+    hasDraggedRef.current = false;
+    setIsDragging(true);
+  };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -915,6 +1108,24 @@ export function TruckCanvas({
 
     setMousePos(mousePoint);
 
+    if (isDragging) {
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        hasDraggedRef.current = true;
+      }
+
+      setPanOffset((prev) => ({
+        x: prev.x + dx,
+        y: prev.y + dy,
+      }));
+
+      dragStartRef.current = { x: e.clientX, y: e.clientY };
+      return;
+    }
+
+    // Raycast hit-test against depth-sorted projected faces
     const reversed = [...projectedCacheRef.current].reverse();
     let hitBlock: DrawableBlock | null = null;
 
@@ -934,15 +1145,33 @@ export function TruckCanvas({
     }
   };
 
+  const handleMouseUp = () => {
+    if (!hasDraggedRef.current) {
+      if (onSelectBlock) {
+        onSelectBlock(hoveredBlock);
+      }
+    }
+    setIsDragging(false);
+  };
+
   const handleMouseLeave = () => {
+    setIsDragging(false);
     setHoveredBlock(null);
     setMousePos(null);
   };
 
-  const handleClick = () => {
-    if (onSelectBlock) {
-      onSelectBlock(hoveredBlock);
-    }
+  // Reset Camera View
+  const handleResetCamera = () => {
+    setUserScale(1.0);
+    setPanOffset({ x: 0, y: 0 });
+  };
+
+  const handleZoomIn = () => {
+    setUserScale((prev) => Math.min(3.5, prev * 1.25));
+  };
+
+  const handleZoomOut = () => {
+    setUserScale((prev) => Math.max(0.4, prev / 1.25));
   };
 
   return (
@@ -952,14 +1181,54 @@ export function TruckCanvas({
     >
       <canvas
         ref={canvasRef}
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
-        onClick={handleClick}
-        className="w-full h-full block cursor-crosshair"
+        className={`w-full h-full block ${
+          isDragging ? 'cursor-grabbing' : 'cursor-grab'
+        }`}
       />
 
+      {/* Floating Interactive Camera Controls HUD */}
+      <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1.5 bg-[#111318]/90 p-1 rounded-lg border border-[#1F242F] backdrop-blur-md shadow-xl text-zinc-300">
+        <button
+          type="button"
+          onClick={handleZoomIn}
+          className="p-1.5 rounded hover:bg-[#1F242F] hover:text-white transition-colors"
+          title="Zoom In (or Scroll Up)"
+        >
+          <ZoomIn className="w-4 h-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={handleZoomOut}
+          className="p-1.5 rounded hover:bg-[#1F242F] hover:text-white transition-colors"
+          title="Zoom Out (or Scroll Down)"
+        >
+          <ZoomOut className="w-4 h-4" />
+        </button>
+
+        <div className="w-[1px] h-4 bg-[#1F242F] mx-0.5" />
+
+        <button
+          type="button"
+          onClick={handleResetCamera}
+          className="p-1.5 rounded hover:bg-[#1F242F] hover:text-white transition-colors"
+          title="Reset Camera Framing"
+        >
+          <RotateCcw className="w-4 h-4" />
+        </button>
+
+        <div className="px-2 text-[11px] font-mono text-zinc-400 tabular-nums">
+          {Math.round(userScale * 100)}%
+        </div>
+      </div>
+
       {/* Dimensional Tooltip HUD */}
-      {hoveredBlock && mousePos && (
+      {hoveredBlock && mousePos && !isDragging && (
         <div
           className="absolute pointer-events-none z-30 px-3.5 py-2.5 bg-[#111318]/95 border border-[#0066FF] shadow-2xl backdrop-blur-md rounded-lg text-xs font-sans transition-transform duration-75 text-white"
           style={{
@@ -1008,14 +1277,10 @@ export function TruckCanvas({
             {truck.name} <span className="text-zinc-400 font-normal tabular-nums">({truck.volumeCuFt} cu ft)</span>
           </span>
         </div>
-        <div className="text-[11px] text-zinc-500 px-1 tabular-nums">
-          {blocks.length} items packed • architectural CAD view
+        <div className="text-[11px] text-zinc-500 px-1 tabular-nums flex items-center gap-1.5">
+          <Move className="w-3 h-3 text-[#0066FF]" />
+          <span>Click & drag to pan • Scroll to zoom</span>
         </div>
-      </div>
-
-      {/* Controls / Perspective Tag Bottom Right */}
-      <div className="absolute bottom-3 right-4 z-10 text-[11px] text-zinc-500 pointer-events-none">
-        30° isometric projection • 1-ft grid
       </div>
     </div>
   );
