@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { TruckSpec } from '@/lib/constants/trucks';
-import { DrawableBlock } from '@/lib/engine/packEngine';
+import { DrawableBlock, sortBlocksTopological } from '@/lib/engine/packEngine';
 import { ZoomIn, ZoomOut, RotateCcw, Move } from 'lucide-react';
 
 interface TruckCanvasProps {
@@ -226,8 +226,13 @@ export function TruckCanvas({
     const offsetX = width / 2 - midX * scale + panOffset.x;
     const offsetY = height / 2 - midY * scale + 15 + panOffset.y;
 
-    const proj = (x: number, y: number, z: number) =>
-      project3DTo2D(x, y, z, scale, offsetX, offsetY);
+    const proj = (x: number, y: number, z: number) => {
+      const p = project3DTo2D(x, y, z, scale, offsetX, offsetY);
+      return {
+        x: Math.round(p.x * 100) / 100,
+        y: Math.round(p.y * 100) / 100,
+      };
+    };
 
     // =========================================================================
     // HELPER: DRAW 3D PRISM (Crisp Architectural CAD Linework)
@@ -677,11 +682,11 @@ export function TruckCanvas({
     }
 
     // =========================================================================
-    // STAGE 6: CARGO ITEMS (DEPTH-SORTED BACK-TO-FRONT: x + z + y)
+    // STAGE 6: CARGO ITEMS (TOPOLOGICAL SORT / POS-ET OCCLUSION PIPELINE)
+    // Guarantees that background items (e.g. coffee table) are rendered BEFORE
+    // the foreground items occluding them (e.g. TV stand), regardless of aspect ratio.
     // =========================================================================
-    const sortedBlocks = [...blocks].sort(
-      (a, b) => a.x + a.z + a.y - (b.x + b.z + b.y)
-    );
+    const sortedBlocks = sortBlocksTopological(blocks, proj);
 
     const projectedFacesList: BlockProjectedFaces[] = [];
 
@@ -716,6 +721,8 @@ export function TruckCanvas({
       const rightColor = adjustBrightness(baseColor, 0.04);
       const frontColor = adjustBrightness(baseColor, -0.22);
 
+      // Sub-Pixel Seam Bleed Fix: fill face, then stroke with its own fill color
+      // at 0.75px to eliminate transparent sub-pixel cracks against dark canvas background
       const drawFace = (pts: Point2D[], fillColor: string) => {
         ctx.beginPath();
         ctx.moveTo(pts[0].x, pts[0].y);
@@ -726,21 +733,65 @@ export function TruckCanvas({
         ctx.fillStyle = fillColor;
         ctx.fill();
 
-        ctx.strokeStyle = isHovered || isSelected ? '#0066FF' : 'rgba(0, 0, 0, 0.4)';
-        ctx.lineWidth = isHovered || isSelected ? 2 : 1;
+        ctx.strokeStyle = fillColor;
+        ctx.lineWidth = 0.75;
         ctx.stroke();
       };
+
+      // Ground Contact Ambient Occlusion: Anchor block directly onto the floor plate at Y = 0
+      if (b.y === 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(v0.x, v0.y);
+        ctx.lineTo(v1.x, v1.y);
+        ctx.lineTo(v2.x, v2.y);
+        ctx.lineTo(v3.x, v3.y);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        ctx.fill();
+        ctx.restore();
+      }
 
       drawFace(rightFace, rightColor);
       drawFace(frontFace, frontColor);
       drawFace(topFace, topColor);
 
-      if (isHovered || isSelected) {
+      // Consistent Edge Highlighting (Sharp Inner Contours)
+      if (!isHovered && !isSelected) {
         ctx.save();
-        ctx.shadowColor = '#0066FF';
-        ctx.shadowBlur = 10;
+        // Top Face Highlight: Crisp 1px subtle rim highlight (rgba(255, 255, 255, 0.16))
+        ctx.beginPath();
+        ctx.moveTo(v4.x, v4.y);
+        ctx.lineTo(v5.x, v5.y);
+        ctx.lineTo(v6.x, v6.y);
+        ctx.lineTo(v7.x, v7.y);
+        ctx.closePath();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Crease / Joint Division Edges: Crisp 1px dark edge (rgba(0, 0, 0, 0.35))
+        ctx.beginPath();
+        // Front vertical joint
+        ctx.moveTo(v6.x, v6.y);
+        ctx.lineTo(v2.x, v2.y);
+        // Bottom front crease
+        ctx.moveTo(v2.x, v2.y);
+        ctx.lineTo(v3.x, v3.y);
+        // Bottom right crease
+        ctx.moveTo(v2.x, v2.y);
+        ctx.lineTo(v1.x, v1.y);
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        // Active Selection / Hover Contour (Crisp #0066FF perimeter)
+        ctx.save();
         ctx.strokeStyle = '#0066FF';
         ctx.lineWidth = 2;
+        ctx.shadowColor = '#0066FF';
+        ctx.shadowBlur = 8;
 
         ctx.beginPath();
         ctx.moveTo(v4.x, v4.y);
@@ -750,6 +801,17 @@ export function TruckCanvas({
         ctx.lineTo(v3.x, v3.y);
         ctx.lineTo(v7.x, v7.y);
         ctx.closePath();
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(v6.x, v6.y);
+        ctx.lineTo(v5.x, v5.y);
+        ctx.moveTo(v6.x, v6.y);
+        ctx.lineTo(v7.x, v7.y);
+        ctx.moveTo(v6.x, v6.y);
+        ctx.lineTo(v2.x, v2.y);
         ctx.stroke();
         ctx.restore();
       }

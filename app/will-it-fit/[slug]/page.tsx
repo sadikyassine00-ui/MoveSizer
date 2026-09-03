@@ -261,9 +261,9 @@ export default async function WillItFitPage({ params }: Props) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           {/* Item Specs */}
           <div className="p-3.5 rounded-md bg-[#111318] border border-[#1F242F] space-y-3">
-            <div className="font-semibold text-white uppercase text-[11px] tracking-wider text-zinc-400">
+            <h2 className="font-semibold text-white uppercase text-[11px] tracking-wider text-zinc-400">
               {item.name} Dimensions
-            </div>
+            </h2>
             <div className="space-y-2 font-mono">
               <div className="flex justify-between border-b border-[#1F242F] pb-1.5">
                 <span className="text-zinc-500 font-sans">Packed Length:</span>
@@ -290,9 +290,9 @@ export default async function WillItFitPage({ params }: Props) {
 
           {/* Truck Clearance Specs */}
           <div className="p-3.5 rounded-md bg-[#111318] border border-[#1F242F] space-y-3">
-            <div className="font-semibold text-white uppercase text-[11px] tracking-wider text-zinc-400">
+            <h2 className="font-semibold text-white uppercase text-[11px] tracking-wider text-zinc-400">
               {truck.name} Interior Clearances
-            </div>
+            </h2>
             <div className="space-y-2 font-mono">
               <div className="flex justify-between border-b border-[#1F242F] pb-1.5">
                 <span className="text-zinc-500 font-sans">Interior Length:</span>
@@ -323,7 +323,7 @@ export default async function WillItFitPage({ params }: Props) {
         {/* Bottom CTA Card */}
         <div className="p-4 rounded-md bg-[#111318] border border-[#1F242F] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <h3 className="text-sm font-semibold text-white">Planning a full household move?</h3>
+            <h2 className="text-sm font-semibold text-white">Planning a full household move?</h2>
             <p className="text-xs text-zinc-400 mt-0.5">
               Input your complete furniture and box inventory into the interactive 2.5D visualizer to calculate vehicle fit.
             </p>

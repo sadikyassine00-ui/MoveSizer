@@ -18,7 +18,7 @@ import {
   Mail,
   Loader2,
 } from 'lucide-react';
-import { trackQuoteFormSubmitted } from '@/lib/analytics/events';
+import { trackQuoteFormSubmitted, trackQuoteStep2Reached } from '@/lib/analytics/events';
 
 interface ConversionCardProps {
   truck: TruckSpec;
@@ -135,9 +135,11 @@ export function ConversionCard({
       );
       setPricingResult(pricing);
       setStep(2);
+      trackQuoteStep2Reached(originZip.trim(), destinationZip.trim(), truck.id);
     } catch {
       // Graceful degradation
       setStep(2);
+      trackQuoteStep2Reached(originZip.trim(), destinationZip.trim(), truck.id);
     } finally {
       setIsCalculatingRoute(false);
     }

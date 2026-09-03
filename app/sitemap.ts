@@ -20,44 +20,46 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
+      lastModified: new Date('2026-09-03T18:00:00Z'),
+      changeFrequency: 'daily',
       priority: 1.0,
     },
     {
       url: `${baseUrl}/how-we-calculate`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
+      lastModified: new Date('2026-09-02T12:00:00Z'),
+      changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
       url: `${baseUrl}/privacy`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
+      lastModified: new Date('2026-08-15T00:00:00Z'),
+      changeFrequency: 'yearly',
+      priority: 0.3,
     },
     {
       url: `${baseUrl}/terms`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.5,
+      lastModified: new Date('2026-08-15T00:00:00Z'),
+      changeFrequency: 'yearly',
+      priority: 0.3,
     },
   ];
 
+  // Dwelling guides: staggered realistic lastmod dates
   const dwellingPages: MetadataRoute.Sitemap = Object.keys(DWELLING_SLUG_MAP).map(
-    (dwelling) => ({
+    (dwelling, idx) => ({
       url: `${baseUrl}/truck-size/${dwelling}`,
-      lastModified: new Date(),
+      lastModified: new Date(Date.UTC(2026, 8, 1 + (idx % 3))), // 2026-09-01 to 2026-09-03
       changeFrequency: 'weekly',
-      priority: 0.8,
+      priority: 0.85,
     })
   );
 
-  const fitPages: MetadataRoute.Sitemap = KNOWN_FIT_SLUGS.map((slug) => ({
+  // Single item fit guides: staggered realistic lastmod dates
+  const fitPages: MetadataRoute.Sitemap = KNOWN_FIT_SLUGS.map((slug, idx) => ({
     url: `${baseUrl}/will-it-fit/${slug}`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly',
-    priority: 0.8,
+    lastModified: new Date(Date.UTC(2026, 7, 20 + (idx % 10))), // 2026-08-20 to 2026-08-30
+    changeFrequency: 'monthly',
+    priority: 0.75,
   }));
 
   return [...staticPages, ...dwellingPages, ...fitPages];
