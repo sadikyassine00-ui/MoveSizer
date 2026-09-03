@@ -9,10 +9,9 @@ import { packTruck, CustomItemInput, DrawableBlock } from '@/lib/engine/packEngi
 import { TruckCanvas } from '@/components/visualizer/TruckCanvas';
 import { CapacityGauge } from '@/components/visualizer/CapacityGauge';
 import { InventoryDrawer } from '@/components/ui/InventoryDrawer';
-import { RotateCcw, Truck, Box, ShieldCheck, Sparkles, Layers } from 'lucide-react';
+import { RotateCcw, Truck } from 'lucide-react';
 
 export default function MoveSizerApp() {
-  // Application State
   const [selectedTruckId, setSelectedTruckId] = useState<TruckId>('10ft');
   const [selectedPreset, setSelectedPreset] = useState<PresetId | null>('studio');
   const [bedrooms, setBedrooms] = useState<number>(0);
@@ -24,7 +23,6 @@ export default function MoveSizerApp() {
   const [customItems, setCustomItems] = useState<CustomItemInput[]>([]);
   const [selectedBlock, setSelectedBlock] = useState<DrawableBlock | null>(null);
 
-  // Handle Preset Selection
   const handleSelectPreset = useCallback(
     (presetId: PresetId) => {
       const preset = PRESETS[presetId];
@@ -35,7 +33,6 @@ export default function MoveSizerApp() {
       setBedrooms(preset.bedrooms);
       setOccupants(preset.occupants);
 
-      // Calculate baseline boxes for preset
       const boxCalc = calculateBoxRequirements({
         bedrooms: preset.bedrooms,
         occupants: preset.occupants,
@@ -56,7 +53,6 @@ export default function MoveSizerApp() {
     [density]
   );
 
-  // Handle Room Baseline / Density Changes
   const updateBoxEstimates = useCallback(
     (newBeds: number, newOccs: number, newDens: DensityLevel) => {
       const boxCalc = calculateBoxRequirements({
@@ -117,12 +113,10 @@ export default function MoveSizerApp() {
 
   const currentTruck = TRUCKS[selectedTruckId];
 
-  // Run Packing Engine Heuristic
   const packResult = useMemo(() => {
     return packTruck(currentTruck, inventory, customItems);
   }, [currentTruck, inventory, customItems]);
 
-  // Run Capacity Engine Calculation
   const capacityResult = useMemo(() => {
     return calculateCapacity(currentTruck, inventory);
   }, [currentTruck, inventory]);
@@ -132,21 +126,21 @@ export default function MoveSizerApp() {
       {/* Micro Global Header */}
       <header className="h-14 border-b border-[#1F242F] bg-[#111318] px-4 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 font-display font-black text-2xl uppercase tracking-wider text-white">
-            <div className="p-1.5 rounded-md bg-[#FF5500] text-black">
+          <div className="flex items-center gap-2 font-semibold text-lg tracking-tight text-white">
+            <div className="p-1.5 rounded bg-[#FF5500] text-black">
               <Truck className="w-4 h-4 text-white" />
             </div>
             <span>
-              TRUCK<span className="text-[#FF5500]">SIZER</span>
+              Truck<span className="text-[#FF5500]">Sizer</span>
             </span>
           </div>
-          <span className="hidden sm:inline-block text-xs font-mono uppercase tracking-wide text-gray-500 border-l border-[#1F242F] pl-3">
-            LOGISTICS FIT SPECIFICATION SYSTEM
+          <span className="hidden sm:inline-block text-xs text-zinc-500 border-l border-[#1F242F] pl-3 tracking-tight">
+            2.5D Cargo Fit & Volume Visualizer
           </span>
         </div>
 
         {/* Truck Size Selector Switcher */}
-        <div className="flex items-center gap-1.5 bg-[#090A0C] p-1 rounded-lg border border-[#1F242F]">
+        <div className="flex items-center gap-1 bg-[#090A0C] p-1 rounded-lg border border-[#1F242F]">
           {TRUCK_ORDER.map((tid) => {
             const trk = TRUCKS[tid];
             const isSelected = selectedTruckId === tid;
@@ -155,10 +149,10 @@ export default function MoveSizerApp() {
                 key={tid}
                 type="button"
                 onClick={() => setSelectedTruckId(tid)}
-                className={`px-3.5 py-1 rounded-md text-xs font-mono font-semibold transition-all ${
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
                   isSelected
-                    ? 'bg-[#0066FF] text-white font-bold shadow-md shadow-[#0066FF]/25'
-                    : 'text-gray-400 hover:text-white'
+                    ? 'bg-[#0066FF] text-white shadow-sm'
+                    : 'text-zinc-400 hover:text-white'
                 }`}
               >
                 {trk.name.split(' ')[0]}
@@ -172,7 +166,7 @@ export default function MoveSizerApp() {
           <button
             type="button"
             onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#090A0C] border border-[#1F242F] hover:border-gray-500 text-xs font-mono text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#090A0C] border border-[#1F242F] hover:border-zinc-600 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span className="hidden md:inline">Reset</span>
@@ -180,7 +174,7 @@ export default function MoveSizerApp() {
         </div>
       </header>
 
-      {/* Main Workspace: 2-Column layout */}
+      {/* Main Workspace */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Column: Inventory Drawer */}
         <div className="w-80 md:w-96 shrink-0 h-full flex flex-col z-10 shadow-2xl">
@@ -201,9 +195,8 @@ export default function MoveSizerApp() {
           />
         </div>
 
-        {/* Center / Visualizer: Canvas + Capacity HUD */}
+        {/* Center / Canvas Visualizer */}
         <main className="flex-1 flex flex-col h-full overflow-hidden bg-[#090A0C] relative">
-          {/* 2.5D Isometric HTML5 Canvas */}
           <div className="flex-1 relative w-full h-full min-h-[380px]">
             <TruckCanvas
               truck={currentTruck}
@@ -212,13 +205,12 @@ export default function MoveSizerApp() {
               onSelectBlock={setSelectedBlock}
             />
 
-            {/* Unpacked items warning if capacity exceeded */}
             {packResult.unpackedItems.length > 0 && (
-              <div className="absolute bottom-4 left-4 z-20 max-w-sm p-3.5 rounded-lg bg-[#EF4444]/15 border border-[#EF4444]/50 backdrop-blur-md text-xs font-mono text-white shadow-xl">
-                <div className="font-bold text-[#EF4444] mb-1 flex items-center gap-1.5 uppercase tracking-wide">
-                  <span>{packResult.unpackedItems.length} items exceed spatial envelope!</span>
+              <div className="absolute bottom-4 left-4 z-20 max-w-sm p-3.5 rounded-lg bg-[#EF4444]/15 border border-[#EF4444]/50 backdrop-blur-md text-xs text-white shadow-xl">
+                <div className="font-semibold text-[#EF4444] mb-1 flex items-center gap-1.5">
+                  <span>{packResult.unpackedItems.length} items exceed truck space</span>
                 </div>
-                <div className="text-[11px] text-gray-300">
+                <div className="text-[11px] text-zinc-300">
                   Cargo exceeds interior boundaries. Upgrade truck size to accommodate remaining load.
                 </div>
               </div>

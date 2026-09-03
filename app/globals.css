@@ -11,10 +11,14 @@
 body {
   background-color: #090A0C;
   color: #F8F9FA;
-  font-family: var(--font-jakarta), sans-serif;
+  font-family: var(--font-sans), sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Custom scrollbars for dark panel UI */

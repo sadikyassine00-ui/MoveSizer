@@ -41,9 +41,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ["var(--font-barlow-condensed)", "sans-serif"],
-        sans: ["var(--font-jakarta)", "sans-serif"],
-        mono: ["var(--font-ibm-plex-mono)", "monospace"],
+        sans: ["var(--font-sans)", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+        display: ["var(--font-sans)", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
       },
     },
   },
