@@ -176,16 +176,16 @@ export function TruckCanvas({
     const hasDualRear = truckL >= 300;
     const rearAxles = hasDualRear ? [rearAxleX - 18, rearAxleX + 18] : [rearAxleX];
 
-    // Framing envelope in 3D:
+    // Framing envelope in 3D (includes exterior dimension callout clearance):
     const envelope = [
-      { x: cabFrontX - 12, y: groundY - 6, z: 0 },
-      { x: truckL + 16, y: groundY - 6, z: 0 },
-      { x: truckL + 16, y: groundY - 6, z: truckW + 8 },
-      { x: cabFrontX - 12, y: groundY - 6, z: truckW + 8 },
-      { x: cabFrontX - 12, y: truckH + 12, z: 0 },
-      { x: truckL + 16, y: truckH + 12, z: 0 },
-      { x: truckL + 16, y: truckH + 12, z: truckW + 8 },
-      { x: cabFrontX - 12, y: truckH + 12, z: truckW + 8 },
+      { x: cabFrontX - 14, y: groundY - 8, z: -26 },
+      { x: truckL + 36, y: groundY - 8, z: -26 },
+      { x: truckL + 36, y: groundY - 8, z: truckW + 12 },
+      { x: cabFrontX - 14, y: groundY - 8, z: truckW + 12 },
+      { x: cabFrontX - 14, y: truckH + 34, z: -26 },
+      { x: truckL + 36, y: truckH + 34, z: -26 },
+      { x: truckL + 36, y: truckH + 34, z: truckW + 12 },
+      { x: cabFrontX - 14, y: truckH + 34, z: truckW + 12 },
     ];
 
     let minProjX = Infinity, maxProjX = -Infinity;
@@ -1014,49 +1014,124 @@ export function TruckCanvas({
     }
 
     // =========================================================================
-    // ARCHITECTURAL DIMENSION CALLOUT LINES (CAD Blueprint Style)
+    // ARCHITECTURAL DIMENSION CALLOUTS (CAD Blueprint Floating Badges)
+    // Placed strictly outside the vehicle envelope to prevent any intersection
     // =========================================================================
-    ctx.fillStyle = '#71717A';
-    ctx.strokeStyle = '#27272A';
-    ctx.lineWidth = 1;
-    ctx.font = '500 10px var(--font-sans), sans-serif';
+    const drawDimensionCallout = (
+      p1: { x: number; y: number; z: number },
+      p2: { x: number; y: number; z: number },
+      offset: { x: number; y: number; z: number },
+      label: string,
+      valueText: string
+    ) => {
+      const p1Offset = { x: p1.x + offset.x, y: p1.y + offset.y, z: p1.z + offset.z };
+      const p2Offset = { x: p2.x + offset.x, y: p2.y + offset.y, z: p2.z + offset.z };
 
-    // Length callout line below the floor at Z = truckW
-    const dimLStart = proj(0, groundY - 8, truckW);
-    const dimLEnd = proj(truckL, groundY - 8, truckW);
-    ctx.beginPath();
-    ctx.moveTo(dimLStart.x, dimLStart.y);
-    ctx.lineTo(dimLEnd.x, dimLEnd.y);
-    ctx.stroke();
+      const v1 = proj(p1.x, p1.y, p1.z);
+      const v2 = proj(p2.x, p2.y, p2.z);
+      const o1 = proj(p1Offset.x, p1Offset.y, p1Offset.z);
+      const o2 = proj(p2Offset.x, p2Offset.y, p2Offset.z);
 
-    // Tick marks
-    ctx.beginPath();
-    ctx.moveTo(dimLStart.x, dimLStart.y - 3);
-    ctx.lineTo(dimLStart.x, dimLStart.y + 3);
-    ctx.moveTo(dimLEnd.x, dimLEnd.y - 3);
-    ctx.lineTo(dimLEnd.x, dimLEnd.y + 3);
-    ctx.stroke();
+      ctx.save();
 
-    const dimLMid = proj(truckL / 2, groundY - 8, truckW);
-    ctx.fillText(`${truck.length}″ (${(truck.length / 12).toFixed(1)}′) Length`, dimLMid.x - 35, dimLMid.y + 14);
+      // 1. Dashed Extension / Witness Lines from truck features to dimension line
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.28)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 3]);
 
-    // Height callout line on left bulkhead post
-    const dimHStart = proj(0, 0, -8);
-    const dimHEnd = proj(0, truckH, -8);
-    ctx.beginPath();
-    ctx.moveTo(dimHStart.x, dimHStart.y);
-    ctx.lineTo(dimHEnd.x, dimHEnd.y);
-    ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(v1.x, v1.y);
+      ctx.lineTo(o1.x, o1.y);
+      ctx.stroke();
 
-    ctx.beginPath();
-    ctx.moveTo(dimHStart.x - 3, dimHStart.y);
-    ctx.lineTo(dimHStart.x + 3, dimHStart.y);
-    ctx.moveTo(dimHEnd.x - 3, dimHEnd.y);
-    ctx.lineTo(dimHEnd.x + 3, dimHEnd.y);
-    ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(v2.x, v2.y);
+      ctx.lineTo(o2.x, o2.y);
+      ctx.stroke();
 
-    const dimHMid = proj(0, truckH / 2, -8);
-    ctx.fillText(`${truck.height}″ Height`, dimHMid.x - 68, dimHMid.y);
+      ctx.setLineDash([]);
+
+      // 2. Main Dimension Line
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.65)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(o1.x, o1.y);
+      ctx.lineTo(o2.x, o2.y);
+      ctx.stroke();
+
+      // 3. 45-Degree Architectural Tick Marks
+      const tick = Math.max(3, Math.min(5, scale * 3.5));
+      const drawTickMark = (pt: Point2D) => {
+        ctx.beginPath();
+        ctx.moveTo(pt.x - tick, pt.y + tick);
+        ctx.lineTo(pt.x + tick, pt.y - tick);
+        ctx.strokeStyle = '#38BDF8';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      };
+      drawTickMark(o1);
+      drawTickMark(o2);
+
+      // 4. Center Floating Pill Badge
+      const midX = (o1.x + o2.x) / 2;
+      const midY = (o1.y + o2.y) / 2;
+
+      ctx.font = '600 10px var(--font-sans), sans-serif';
+      const badgeText = `${label} • ${valueText}`;
+      const textWidth = ctx.measureText(badgeText).width;
+      const pillW = textWidth + 16;
+      const pillH = 20;
+
+      // Opaque dark background
+      ctx.fillStyle = '#090A0D';
+      ctx.beginPath();
+      if (typeof (ctx as any).roundRect === 'function') {
+        ctx.roundRect(midX - pillW / 2, midY - pillH / 2, pillW, pillH, 4);
+      } else {
+        ctx.rect(midX - pillW / 2, midY - pillH / 2, pillW, pillH);
+      }
+      ctx.fill();
+
+      // Subtle cyan border
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Text readout
+      ctx.fillStyle = '#F8F9FA';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(badgeText, midX, midY + 0.5);
+
+      ctx.restore();
+    };
+
+    // 1. Cargo Box Length (placed above top roof rail in open background)
+    drawDimensionCallout(
+      { x: 0, y: truckH, z: 0 },
+      { x: truckL, y: truckH, z: 0 },
+      { x: 0, y: 20, z: -20 },
+      'LENGTH',
+      `${truck.length}″ (${(truck.length / 12).toFixed(1)}′)`
+    );
+
+    // 2. Cargo Box Height (placed behind rear roll-up door post in open space)
+    drawDimensionCallout(
+      { x: truckL, y: 0, z: 0 },
+      { x: truckL, y: truckH, z: 0 },
+      { x: 22, y: 0, z: -22 },
+      'HEIGHT',
+      `${truck.height}″ (${(truck.height / 12).toFixed(1)}′)`
+    );
+
+    // 3. Cargo Box Deck Width (placed extending rearward across roll-up door opening)
+    drawDimensionCallout(
+      { x: truckL, y: 0, z: 0 },
+      { x: truckL, y: 0, z: truckW },
+      { x: 28, y: -4, z: 0 },
+      'WIDTH',
+      `${truck.width}″ (${(truck.width / 12).toFixed(1)}′)`
+    );
   }, [truck, blocks, selectedBlockId, hoveredBlock, dimensions, userScale, panOffset]);
 
   useEffect(() => {
