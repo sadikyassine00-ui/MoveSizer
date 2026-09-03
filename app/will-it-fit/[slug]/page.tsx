@@ -151,38 +151,38 @@ export default async function WillItFitPage({ params }: Props) {
       </header>
 
       {/* Hero Section */}
-      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-8 space-y-6">
+      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-8 space-y-5">
         {/* Bold Verdict Hero Badge */}
         <div
-          className={`p-5 rounded-2xl border ${
+          className={`p-4 rounded-md border ${
             fits
               ? 'bg-[#10B981]/10 border-[#10B981]/40 text-emerald-300'
               : 'bg-[#EF4444]/10 border-[#EF4444]/40 text-red-300'
-          } shadow-2xl space-y-2`}
+          } space-y-2`}
         >
           <div className="flex items-center gap-2.5">
             {fits ? (
-              <CheckCircle2 className="w-6 h-6 text-[#10B981] shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-[#10B981] shrink-0" strokeWidth={1.75} />
             ) : (
-              <XCircle className="w-6 h-6 text-[#EF4444] shrink-0" />
+              <XCircle className="w-5 h-5 text-[#EF4444] shrink-0" strokeWidth={1.75} />
             )}
-            <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+            <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
               {verdict}
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-zinc-300 pl-8 leading-relaxed">
+          <p className="text-xs sm:text-sm text-zinc-300 pl-7 leading-relaxed">
             {explanation}
           </p>
         </div>
 
         {/* 2.5D Interactive Truck Cross-Section */}
-        <div className="rounded-2xl border border-[#1F242F] bg-[#111318] overflow-hidden shadow-2xl">
+        <div className="rounded-md border border-[#1F242F] bg-[#111318] overflow-hidden">
           <div className="p-3 bg-[#090A0C] border-b border-[#1F242F] flex items-center justify-between text-xs text-zinc-400">
             <span className="font-semibold text-white flex items-center gap-1.5">
-              <Truck className="w-4 h-4 text-[#0066FF]" />
+              <Truck className="w-4 h-4 text-[#0066FF]" strokeWidth={1.5} />
               2.5D Load Orientation: {item.name} inside {truck.name}
             </span>
-            <span className="text-[11px] text-zinc-500">30° Isometric Cutaway</span>
+            <span className="text-[11px] text-zinc-500 font-mono">30° Isometric Cutaway</span>
           </div>
 
           <div className="h-[420px] w-full">
@@ -196,79 +196,79 @@ export default async function WillItFitPage({ params }: Props) {
         {/* Dimension & Spatial Comparison Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           {/* Item Specs */}
-          <div className="p-4 rounded-xl bg-[#111318] border border-[#1F242F] space-y-3">
-            <div className="font-semibold text-white uppercase text-[11px] tracking-wide text-zinc-400">
+          <div className="p-3.5 rounded-md bg-[#111318] border border-[#1F242F] space-y-3">
+            <div className="font-semibold text-white uppercase text-[11px] tracking-wider text-zinc-400">
               {item.name} Dimensions
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 font-mono">
               <div className="flex justify-between border-b border-[#1F242F] pb-1.5">
-                <span className="text-zinc-500">Packed Length:</span>
-                <span className="font-mono text-white tabular-nums">{item.dimensions.length}″</span>
+                <span className="text-zinc-500 font-sans">Packed Length:</span>
+                <span className="text-white tabular-nums">{item.dimensions.length}″</span>
               </div>
               <div className="flex justify-between border-b border-[#1F242F] pb-1.5">
-                <span className="text-zinc-500">Packed Width:</span>
-                <span className="font-mono text-white tabular-nums">{item.dimensions.width}″</span>
+                <span className="text-zinc-500 font-sans">Packed Width:</span>
+                <span className="text-white tabular-nums">{item.dimensions.width}″</span>
               </div>
               <div className="flex justify-between border-b border-[#1F242F] pb-1.5">
-                <span className="text-zinc-500">Packed Height:</span>
-                <span className="font-mono text-white tabular-nums">{item.dimensions.height}″</span>
+                <span className="text-zinc-500 font-sans">Packed Height:</span>
+                <span className="text-white tabular-nums">{item.dimensions.height}″</span>
               </div>
               <div className="flex justify-between border-b border-[#1F242F] pb-1.5">
-                <span className="text-zinc-500">Item Volume:</span>
-                <span className="font-mono text-[#0066FF] font-semibold tabular-nums">{item.volumeCuFt} cu ft</span>
+                <span className="text-zinc-500 font-sans">Item Volume:</span>
+                <span className="text-[#0066FF] font-semibold tabular-nums">{item.volumeCuFt} cu ft</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-500">Estimated Weight:</span>
-                <span className="font-mono text-white tabular-nums">~{item.weightLbs} lbs</span>
+                <span className="text-zinc-500 font-sans">Estimated Weight:</span>
+                <span className="text-white tabular-nums">~{item.weightLbs} lbs</span>
               </div>
             </div>
           </div>
 
           {/* Truck Clearance Specs */}
-          <div className="p-4 rounded-xl bg-[#111318] border border-[#1F242F] space-y-3">
-            <div className="font-semibold text-white uppercase text-[11px] tracking-wide text-zinc-400">
+          <div className="p-3.5 rounded-md bg-[#111318] border border-[#1F242F] space-y-3">
+            <div className="font-semibold text-white uppercase text-[11px] tracking-wider text-zinc-400">
               {truck.name} Interior Clearances
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 font-mono">
               <div className="flex justify-between border-b border-[#1F242F] pb-1.5">
-                <span className="text-zinc-500">Interior Length:</span>
-                <span className="font-mono text-white tabular-nums">{truck.length}″ ({(truck.length / 12).toFixed(1)}′)</span>
+                <span className="text-zinc-500 font-sans">Interior Length:</span>
+                <span className="text-white tabular-nums">{truck.length}″ ({(truck.length / 12).toFixed(1)}′)</span>
               </div>
               <div className="flex justify-between border-b border-[#1F242F] pb-1.5">
-                <span className="text-zinc-500">Interior Width:</span>
-                <span className="font-mono text-white tabular-nums">{truck.width}″</span>
+                <span className="text-zinc-500 font-sans">Interior Width:</span>
+                <span className="text-white tabular-nums">{truck.width}″</span>
               </div>
               <div className="flex justify-between border-b border-[#1F242F] pb-1.5">
-                <span className="text-zinc-500">Interior Height:</span>
-                <span className="font-mono text-white tabular-nums">{truck.height}″</span>
+                <span className="text-zinc-500 font-sans">Interior Height:</span>
+                <span className="text-white tabular-nums">{truck.height}″</span>
               </div>
               <div className="flex justify-between border-b border-[#1F242F] pb-1.5">
-                <span className="text-zinc-500">Usable Volume (18% buffer):</span>
-                <span className="font-mono text-[#10B981] font-semibold tabular-nums">
+                <span className="text-zinc-500 font-sans">Usable Volume (18% buffer):</span>
+                <span className="text-[#10B981] font-semibold tabular-nums">
                   {Math.round(truck.volumeCuFt * 0.82)} cu ft
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-500">Max Payload:</span>
-                <span className="font-mono text-white tabular-nums">{truck.maxPayloadLbs.toLocaleString()} lbs</span>
+                <span className="text-zinc-500 font-sans">Max Payload:</span>
+                <span className="text-white tabular-nums">{truck.maxPayloadLbs.toLocaleString()} lbs</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Bottom CTA Card */}
-        <div className="p-6 rounded-2xl bg-gradient-to-r from-[#FF5500]/15 to-[#0066FF]/15 border border-[#1F242F] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="p-4 rounded-md bg-[#111318] border border-[#1F242F] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <h3 className="text-base font-semibold text-white">Planning a full move?</h3>
+            <h3 className="text-sm font-semibold text-white">Planning a full household move?</h3>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Add all your boxes and furniture into the interactive 2.5D visualizer to calculate exact truck capacity.
+              Input your complete furniture and box inventory into the interactive 2.5D visualizer to calculate vehicle fit.
             </p>
           </div>
           <Link
             href="/"
-            className="shrink-0 px-4 py-2.5 rounded-lg bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-bold tracking-wide uppercase transition-colors"
+            className="shrink-0 px-3.5 py-2 rounded-md bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-semibold tracking-wide uppercase transition-colors"
           >
-            Open Full Truck Calculator
+            Launch Sizing Workspace
           </Link>
         </div>
       </main>

@@ -3,7 +3,7 @@
 import React from 'react';
 import { TRUCKS, TRUCK_ORDER, TruckId } from '@/lib/constants/trucks';
 import { PRESETS, PresetId } from '@/lib/constants/presets';
-import { Truck, RotateCcw, FileText, Sparkles } from 'lucide-react';
+import { Truck, RotateCcw, FileText } from 'lucide-react';
 
 interface HeaderProps {
   selectedTruckId: TruckId;
@@ -30,23 +30,23 @@ export function Header({
     <header className="h-14 border-b border-[#1F242F] bg-[#111318] px-4 flex items-center justify-between shrink-0 z-30 select-none">
       {/* Brand Logo */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 font-semibold text-lg tracking-tight text-white">
-          <div className="p-1.5 rounded-lg bg-[#FF5500] text-black">
-            <Truck className="w-4 h-4 text-white" />
+        <div className="flex items-center gap-2 font-semibold text-base tracking-tight text-white">
+          <div className="p-1 rounded-md bg-[#FF5500] text-black">
+            <Truck className="w-4 h-4 text-white" strokeWidth={1.75} />
           </div>
           <span>
             TRUCK<span className="text-[#FF5500]">SIZER</span>
           </span>
         </div>
         <span className="hidden xl:inline-block text-xs text-zinc-500 border-l border-[#1F242F] pl-3">
-          2.5D Moving Truck Fit & Cargo Sizing
+          Commercial Cargo Volume & Vehicle Sizing Engine
         </span>
       </div>
 
       {/* Quick Presets (Desktop) */}
-      <div className="hidden lg:flex items-center gap-1.5 bg-[#090A0C] px-2 py-1 rounded-lg border border-[#1F242F]">
-        <span className="text-[10px] uppercase font-semibold text-zinc-500 mr-1 flex items-center gap-1">
-          <Sparkles className="w-3 h-3 text-[#FF5500]" /> Preset:
+      <div className="hidden lg:flex items-center gap-1 bg-[#090A0C] px-1.5 py-1 rounded-md border border-[#1F242F]">
+        <span className="text-[10px] uppercase font-semibold text-zinc-500 mr-1 px-1 font-mono">
+          Profile:
         </span>
         {(['studio', '1-2_bed', '3+_bed'] as PresetId[]).map((pid) => {
           const p = PRESETS[pid];
@@ -56,9 +56,9 @@ export function Header({
               key={pid}
               type="button"
               onClick={() => onSelectPreset(pid)}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
+              className={`px-2 py-0.5 rounded-md text-xs font-medium transition-colors ${
                 isActive
-                  ? 'bg-[#FF5500] text-white shadow-sm'
+                  ? 'bg-[#FF5500] text-white'
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
@@ -69,7 +69,7 @@ export function Header({
       </div>
 
       {/* Truck Selector Buttons */}
-      <div className="flex items-center gap-1 bg-[#090A0C] p-1 rounded-lg border border-[#1F242F]">
+      <div className="flex items-center gap-1 bg-[#090A0C] p-1 rounded-md border border-[#1F242F]">
         {TRUCK_ORDER.map((tid) => {
           const trk = TRUCKS[tid];
           const isSelected = selectedTruckId === tid;
@@ -78,9 +78,9 @@ export function Header({
               key={tid}
               type="button"
               onClick={() => onSelectTruckId(tid)}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all tabular-nums ${
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors font-mono tabular-nums ${
                 isSelected
-                  ? 'bg-[#0066FF] text-white shadow-sm'
+                  ? 'bg-[#0066FF] text-white'
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
@@ -107,9 +107,9 @@ export function Header({
           <button
             type="button"
             onClick={onOpenManifest}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-medium text-zinc-300 hover:text-white transition-colors"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-medium text-zinc-300 hover:text-white transition-colors"
           >
-            <FileText className="w-3.5 h-3.5 text-[#0066FF]" />
+            <FileText className="w-3.5 h-3.5 text-[#0066FF]" strokeWidth={1.5} />
             <span>Manifest</span>
           </button>
         )}
@@ -118,10 +118,10 @@ export function Header({
         <button
           type="button"
           onClick={onReset}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
           title="Reset canvas and inventory"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
+          <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
           <span className="hidden md:inline">Reset</span>
         </button>
       </div>

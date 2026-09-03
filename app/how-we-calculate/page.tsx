@@ -39,15 +39,15 @@ export default function HowWeCalculatePage() {
         </div>
 
         {/* Section 1: The 18% Packing Buffer */}
-        <section className="space-y-3 bg-[#111318] border border-[#1F242F] p-6 rounded-2xl">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-[#10B981]" />
+        <section className="space-y-3 bg-[#111318] border border-[#1F242F] p-5 rounded-md">
+          <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-[#10B981]" strokeWidth={1.5} />
             <span>The Mandatory 18% Real-World Packing Inefficiency Buffer</span>
           </h2>
           <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
             Raw cubic volume advertised by truck rental companies represents total empty water-tight volume. In real moves, irregular furniture silhouettes, wheel wells, mattress tapers, and packing voids make 100% volumetric utilization physically impossible.
           </p>
-          <div className="bg-[#090A0C] p-4 rounded-xl border border-[#1F242F] font-mono text-xs text-zinc-300 space-y-1">
+          <div className="bg-[#090A0C] p-3.5 rounded-md border border-[#1F242F] font-mono text-xs text-zinc-300 space-y-1">
             <div>Usable Capacity = Interior Truck Volume (cu ft) × 0.82</div>
             <div>Fill Percentage = (∑ Item Volume / Usable Capacity) × 100</div>
           </div>
@@ -57,34 +57,34 @@ export default function HowWeCalculatePage() {
         </section>
 
         {/* Section 2: Box Count Formulas */}
-        <section className="space-y-3 bg-[#111318] border border-[#1F242F] p-6 rounded-2xl">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Layers className="w-5 h-5 text-[#FF5500]" />
+        <section className="space-y-3 bg-[#111318] border border-[#1F242F] p-5 rounded-md">
+          <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <Layers className="w-5 h-5 text-[#FF5500]" strokeWidth={1.5} />
             <span>Box Estimation Formulas & Density Multipliers</span>
           </h2>
           <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
             Box counts are modeled dynamically based on bedroom counts, occupant totals, and personal packing density:
           </p>
-          <div className="bg-[#090A0C] p-4 rounded-xl border border-[#1F242F] font-mono text-xs text-zinc-300 space-y-1">
+          <div className="bg-[#090A0C] p-3.5 rounded-md border border-[#1F242F] font-mono text-xs text-zinc-300 space-y-1">
             <div>Total Boxes = ((Bedrooms × 20) + (Occupants × 10)) × Density Multiplier</div>
             <div className="text-zinc-500 pt-1">
               Multipliers: Minimalist (0.8x) • Standard (1.0x) • Packrat (1.35x)
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-2">
-            <div className="p-3 bg-[#090A0C] rounded-lg border border-[#1F242F]">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs pt-1">
+            <div className="p-3 bg-[#090A0C] rounded-md border border-[#1F242F]">
               <div className="text-zinc-500">Small (1.5 cu ft)</div>
               <div className="font-bold text-white mt-0.5">30% of total</div>
             </div>
-            <div className="p-3 bg-[#090A0C] rounded-lg border border-[#1F242F]">
+            <div className="p-3 bg-[#090A0C] rounded-md border border-[#1F242F]">
               <div className="text-zinc-500">Medium (3.0 cu ft)</div>
               <div className="font-bold text-white mt-0.5">45% of total</div>
             </div>
-            <div className="p-3 bg-[#090A0C] rounded-lg border border-[#1F242F]">
+            <div className="p-3 bg-[#090A0C] rounded-md border border-[#1F242F]">
               <div className="text-zinc-500">Large (4.5 cu ft)</div>
               <div className="font-bold text-white mt-0.5">15% of total</div>
             </div>
-            <div className="p-3 bg-[#090A0C] rounded-lg border border-[#1F242F]">
+            <div className="p-3 bg-[#090A0C] rounded-md border border-[#1F242F]">
               <div className="text-zinc-500">Wardrobe (16 cu ft)</div>
               <div className="font-bold text-white mt-0.5">Bedrooms × 2 (min 2)</div>
             </div>
@@ -92,9 +92,9 @@ export default function HowWeCalculatePage() {
         </section>
 
         {/* Section 3: 4-Phase Heuristic Engine */}
-        <section className="space-y-3 bg-[#111318] border border-[#1F242F] p-6 rounded-2xl">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Truck className="w-5 h-5 text-[#0066FF]" />
+        <section className="space-y-3 bg-[#111318] border border-[#1F242F] p-5 rounded-md">
+          <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <Truck className="w-5 h-5 text-[#0066FF]" strokeWidth={1.5} />
             <span>5-Phase Isometric Auto-Pack Heuristic</span>
           </h2>
           <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">

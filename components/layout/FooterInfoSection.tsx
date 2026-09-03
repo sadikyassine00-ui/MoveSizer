@@ -21,12 +21,12 @@ export function FooterInfoSection() {
                 Standard interior vehicle bounds reflecting U-Haul, Budget, and Penske commercial cargo boxes.
               </p>
             </div>
-            <span className="text-xs px-2.5 py-1 rounded bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 font-medium">
+            <span className="text-xs px-2.5 py-1 rounded-md bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 font-medium">
               18% Real-World Packing Buffer Applied
             </span>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-[#1F242F] bg-[#111318]">
+          <div className="overflow-x-auto rounded-md border border-[#1F242F] bg-[#111318]">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-[#1F242F] bg-[#090A0C] text-zinc-400 uppercase text-[11px] tracking-wider">
@@ -79,13 +79,13 @@ export function FooterInfoSection() {
         {/* 2. Professional Loading Methodology Overview */}
         <div className="space-y-4">
           <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-            <Compass className="w-5 h-5 text-[#0066FF]" />
+            <Compass className="w-5 h-5 text-[#0066FF]" strokeWidth={1.5} />
             <span>Commercial Cargo Distribution Methodology</span>
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
-            <div className="p-4 rounded-xl bg-[#111318] border border-[#1F242F] space-y-2">
-              <div className="w-7 h-7 rounded-lg bg-[#0066FF]/20 text-[#0066FF] flex items-center justify-center font-bold text-sm">
+            <div className="p-4 rounded-md bg-[#111318] border border-[#1F242F] space-y-2">
+              <div className="w-6 h-6 rounded-md bg-[#0066FF]/20 text-[#0066FF] flex items-center justify-center font-bold text-xs">
                 1
               </div>
               <h4 className="font-semibold text-white text-sm">Side Wall Rails</h4>
@@ -94,8 +94,8 @@ export function FooterInfoSection() {
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-[#111318] border border-[#1F242F] space-y-2">
-              <div className="w-7 h-7 rounded-lg bg-[#0066FF]/20 text-[#0066FF] flex items-center justify-center font-bold text-sm">
+            <div className="p-4 rounded-md bg-[#111318] border border-[#1F242F] space-y-2">
+              <div className="w-6 h-6 rounded-md bg-[#0066FF]/20 text-[#0066FF] flex items-center justify-center font-bold text-xs">
                 2
               </div>
               <h4 className="font-semibold text-white text-sm">Bulkhead Foundation</h4>
@@ -104,8 +104,8 @@ export function FooterInfoSection() {
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-[#111318] border border-[#1F242F] space-y-2">
-              <div className="w-7 h-7 rounded-lg bg-[#0066FF]/20 text-[#0066FF] flex items-center justify-center font-bold text-sm">
+            <div className="p-4 rounded-md bg-[#111318] border border-[#1F242F] space-y-2">
+              <div className="w-6 h-6 rounded-md bg-[#0066FF]/20 text-[#0066FF] flex items-center justify-center font-bold text-xs">
                 3
               </div>
               <h4 className="font-semibold text-white text-sm">Vertical Box Tiers</h4>
@@ -114,8 +114,8 @@ export function FooterInfoSection() {
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-[#111318] border border-[#1F242F] space-y-2">
-              <div className="w-7 h-7 rounded-lg bg-[#0066FF]/20 text-[#0066FF] flex items-center justify-center font-bold text-sm">
+            <div className="p-4 rounded-md bg-[#111318] border border-[#1F242F] space-y-2">
+              <div className="w-6 h-6 rounded-md bg-[#0066FF]/20 text-[#0066FF] flex items-center justify-center font-bold text-xs">
                 4
               </div>
               <h4 className="font-semibold text-white text-sm">Mom&apos;s Attic</h4>
@@ -127,7 +127,7 @@ export function FooterInfoSection() {
         </div>
 
         {/* 3. Statutory Legal Disclaimer & Compliance */}
-        <div className="p-5 rounded-xl bg-[#090A0C] border border-[#1F242F] space-y-3">
+        <div className="p-4 rounded-md bg-[#090A0C] border border-[#1F242F] space-y-2.5">
           <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
             <ShieldCheck className="w-4 h-4 text-[#FF5500]" />
             <span>Volumetric Modeling & Safety Buffer Compliance Notice</span>

@@ -15,7 +15,7 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
-  Sparkles,
+  LayoutGrid,
   Users,
   Home,
   Sliders,
@@ -155,17 +155,17 @@ export function InventoryDrawer({
 
   return (
     <div className={`flex flex-col h-full bg-[#111318] border-r border-[#1F242F] text-zinc-200 overflow-y-auto ${className}`}>
-      {/* 1. Header & One-Click Preset Selectors */}
-      <div className="p-4 border-b border-[#1F242F] space-y-3 shrink-0">
+      {/* 1. Header & Standard Dwelling Presets */}
+      <div className="p-3.5 border-b border-[#1F242F] space-y-2.5 shrink-0">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-medium tracking-wide uppercase text-zinc-500 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-[#FF5500]" />
-            Room Presets
+          <span className="text-[11px] font-semibold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5">
+            <LayoutGrid className="w-3.5 h-3.5 text-zinc-400" strokeWidth={1.5} />
+            Dwelling Profiles
           </span>
-          <span className="text-[11px] text-zinc-500">1-Click</span>
+          <span className="text-[10px] font-mono text-zinc-500 uppercase">Presets</span>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-1.5">
           {(['studio', '1-2_bed', '3+_bed'] as PresetId[]).map((pid) => {
             const preset = PRESETS[pid];
             const isActive = selectedPreset === pid;
@@ -174,85 +174,85 @@ export function InventoryDrawer({
                 key={pid}
                 type="button"
                 onClick={() => onSelectPreset(pid)}
-                className={`flex flex-col items-center justify-center p-2 rounded-lg border text-xs transition-all ${
+                className={`flex flex-col items-center justify-center p-2 rounded-md border text-xs transition-colors ${
                   isActive
-                    ? 'bg-[#FF5500]/15 border-[#FF5500] text-white shadow-sm'
+                    ? 'bg-[#FF5500]/15 border-[#FF5500] text-white'
                     : 'bg-[#090A0C] border-[#1F242F] text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
                 }`}
               >
                 <span className="font-semibold text-xs tracking-tight">{preset.label}</span>
-                <span className="text-[10px] text-zinc-500 mt-0.5 tabular-nums">{preset.defaultTruck}</span>
+                <span className="text-[10px] text-zinc-500 mt-0.5 font-mono tabular-nums">{preset.defaultTruck}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* 2. Baseline Room Controls */}
-      <div className="p-4 border-b border-[#1F242F] space-y-3 bg-[#0D0F14] shrink-0">
+      {/* 2. Baseline Occupancy & Box Density Model */}
+      <div className="p-3.5 border-b border-[#1F242F] space-y-3 bg-[#0D0F14] shrink-0">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-medium tracking-wide uppercase text-zinc-500 flex items-center gap-1.5">
-            <Sliders className="w-3.5 h-3.5 text-[#0066FF]" />
-            Room Baseline & Density
+          <span className="text-[11px] font-semibold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5">
+            <Sliders className="w-3.5 h-3.5 text-zinc-400" strokeWidth={1.5} />
+            Occupancy & Density
           </span>
-          <span className="text-[11px] text-[#0066FF]">Auto-Calc</span>
+          <span className="text-[10px] font-mono text-zinc-500 uppercase">Dynamic</span>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2">
           {/* Bedrooms Stepper */}
-          <div className="space-y-1 bg-[#111318] p-2.5 rounded-lg border border-[#1F242F]">
+          <div className="space-y-1 bg-[#111318] p-2 rounded-md border border-[#1F242F]">
             <div className="flex items-center justify-between text-xs text-zinc-400">
-              <span className="flex items-center gap-1">
-                <Home className="w-3 h-3" /> Bedrooms
+              <span className="flex items-center gap-1 text-[11px]">
+                <Home className="w-3 h-3 text-zinc-400" strokeWidth={1.5} /> Bedrooms
               </span>
-              <span className="font-semibold text-white tabular-nums">{bedrooms}</span>
+              <span className="font-semibold text-white font-mono tabular-nums">{bedrooms}</span>
             </div>
-            <div className="flex items-center justify-between gap-1 pt-1">
+            <div className="flex items-center justify-between gap-1 pt-0.5">
               <button
                 type="button"
                 onClick={() => onBedroomsChange(Math.max(1, bedrooms - 1))}
-                className="w-7 h-7 flex items-center justify-center rounded bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
+                className="w-6 h-6 flex items-center justify-center rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
                 disabled={bedrooms <= 1}
               >
-                <Minus className="w-3.5 h-3.5" />
+                <Minus className="w-3 h-3" strokeWidth={1.5} />
               </button>
-              <span className="text-xs font-semibold text-zinc-200 tabular-nums">{bedrooms}</span>
+              <span className="text-xs font-semibold text-zinc-200 font-mono tabular-nums">{bedrooms}</span>
               <button
                 type="button"
                 onClick={() => onBedroomsChange(Math.min(5, bedrooms + 1))}
-                className="w-7 h-7 flex items-center justify-center rounded bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
+                className="w-6 h-6 flex items-center justify-center rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
                 disabled={bedrooms >= 5}
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-3 h-3" strokeWidth={1.5} />
               </button>
             </div>
           </div>
 
           {/* Occupants Stepper */}
-          <div className="space-y-1 bg-[#111318] p-2.5 rounded-lg border border-[#1F242F]">
+          <div className="space-y-1 bg-[#111318] p-2 rounded-md border border-[#1F242F]">
             <div className="flex items-center justify-between text-xs text-zinc-400">
-              <span className="flex items-center gap-1">
-                <Users className="w-3 h-3" /> Occupants
+              <span className="flex items-center gap-1 text-[11px]">
+                <Users className="w-3 h-3 text-zinc-400" strokeWidth={1.5} /> Occupants
               </span>
-              <span className="font-semibold text-white tabular-nums">{occupants}</span>
+              <span className="font-semibold text-white font-mono tabular-nums">{occupants}</span>
             </div>
-            <div className="flex items-center justify-between gap-1 pt-1">
+            <div className="flex items-center justify-between gap-1 pt-0.5">
               <button
                 type="button"
                 onClick={() => onOccupantsChange(Math.max(1, occupants - 1))}
-                className="w-7 h-7 flex items-center justify-center rounded bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
+                className="w-6 h-6 flex items-center justify-center rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
                 disabled={occupants <= 1}
               >
-                <Minus className="w-3.5 h-3.5" />
+                <Minus className="w-3 h-3" strokeWidth={1.5} />
               </button>
-              <span className="text-xs font-semibold text-zinc-200 tabular-nums">{occupants}</span>
+              <span className="text-xs font-semibold text-zinc-200 font-mono tabular-nums">{occupants}</span>
               <button
                 type="button"
                 onClick={() => onOccupantsChange(Math.min(6, occupants + 1))}
-                className="w-7 h-7 flex items-center justify-center rounded bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
+                className="w-6 h-6 flex items-center justify-center rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
                 disabled={occupants >= 6}
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-3 h-3" strokeWidth={1.5} />
               </button>
             </div>
           </div>
@@ -260,13 +260,13 @@ export function InventoryDrawer({
 
         {/* Density Dropdown */}
         <div className="space-y-1">
-          <label className="text-[11px] text-zinc-400 flex items-center justify-between">
-            <span>Packing Density Multiplier</span>
+          <label className="text-[10px] uppercase tracking-wider text-zinc-400 flex items-center justify-between">
+            <span>Box Density Multiplier</span>
           </label>
           <select
             value={density}
             onChange={(e) => onDensityChange(e.target.value as DensityLevel)}
-            className="w-full bg-[#090A0C] border border-[#1F242F] rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-[#0066FF]"
+            className="w-full bg-[#090A0C] border border-[#1F242F] rounded-md px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
           >
             <option value="minimalist">Minimalist (0.8x)</option>
             <option value="standard">Standard (1.0x)</option>
@@ -399,17 +399,17 @@ export function InventoryDrawer({
 
           {openSections.custom && (
             <div className="p-3 pt-0 space-y-3">
-              <form onSubmit={handleAddCustom} className="space-y-2.5 bg-[#090A0C] p-3 rounded-lg border border-[#1F242F]">
+              <form onSubmit={handleAddCustom} className="space-y-2.5 bg-[#090A0C] p-3 rounded-md border border-[#1F242F]">
                 <div>
-                  <label className="text-[10px] font-medium text-zinc-400 block mb-1 uppercase tracking-wide">
+                  <label className="text-[10px] font-semibold text-zinc-400 block mb-1 uppercase tracking-wider">
                     Item Description
                   </label>
                   <input
                     type="text"
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
-                    placeholder="e.g. Piano, Armoire"
-                    className="w-full bg-[#111318] border border-[#1F242F] rounded px-2.5 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-[#0066FF]"
+                    placeholder="e.g. Upright Piano, Armoire"
+                    className="w-full bg-[#111318] border border-[#1F242F] rounded-md px-2.5 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
                   />
                 </div>
 
@@ -425,7 +425,7 @@ export function InventoryDrawer({
                       value={customLength}
                       onChange={(e) => setCustomLength(e.target.value)}
                       placeholder="60"
-                      className="w-full bg-[#111318] border border-[#1F242F] rounded px-2 py-1 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-[#0066FF] tabular-nums"
+                      className="w-full bg-[#111318] border border-[#1F242F] rounded-md px-2 py-1 text-xs text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500 tabular-nums"
                     />
                   </div>
                   <div>
@@ -439,7 +439,7 @@ export function InventoryDrawer({
                       value={customWidth}
                       onChange={(e) => setCustomWidth(e.target.value)}
                       placeholder="24"
-                      className="w-full bg-[#111318] border border-[#1F242F] rounded px-2 py-1 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-[#0066FF] tabular-nums"
+                      className="w-full bg-[#111318] border border-[#1F242F] rounded-md px-2 py-1 text-xs text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500 tabular-nums"
                     />
                   </div>
                   <div>
@@ -453,7 +453,7 @@ export function InventoryDrawer({
                       value={customHeight}
                       onChange={(e) => setCustomHeight(e.target.value)}
                       placeholder="48"
-                      className="w-full bg-[#111318] border border-[#1F242F] rounded px-2 py-1 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-[#0066FF] tabular-nums"
+                      className="w-full bg-[#111318] border border-[#1F242F] rounded-md px-2 py-1 text-xs text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500 tabular-nums"
                     />
                   </div>
                 </div>
@@ -467,16 +467,16 @@ export function InventoryDrawer({
                       max="20"
                       value={customQuantity}
                       onChange={(e) => setCustomQuantity(parseInt(e.target.value) || 1)}
-                      className="w-14 bg-[#111318] border border-[#1F242F] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#0066FF] tabular-nums"
+                      className="w-14 bg-[#111318] border border-[#1F242F] rounded-md px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500 tabular-nums"
                     />
                   </div>
 
                   <button
                     type="submit"
-                    className="flex items-center gap-1 px-3 py-1.5 rounded bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-semibold transition-colors"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-semibold transition-colors"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add to Truck</span>
+                    <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    <span>Add Item</span>
                   </button>
                 </div>
 

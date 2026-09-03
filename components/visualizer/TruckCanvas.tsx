@@ -1313,37 +1313,37 @@ export function TruckCanvas({
       />
 
       {/* Floating Interactive Camera Controls HUD */}
-      <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1.5 bg-[#111318]/90 p-1 rounded-lg border border-[#1F242F] backdrop-blur-md shadow-xl text-zinc-300">
+      <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1 bg-[#111318]/90 p-1 rounded-md border border-[#1F242F] backdrop-blur-md text-zinc-300">
         <button
           type="button"
           onClick={handleZoomIn}
-          className="p-1.5 rounded hover:bg-[#1F242F] hover:text-white transition-colors"
+          className="p-1 rounded-md hover:bg-[#1F242F] hover:text-white transition-colors"
           title="Zoom In (or Scroll Up)"
         >
-          <ZoomIn className="w-4 h-4" />
+          <ZoomIn className="w-3.5 h-3.5" strokeWidth={1.5} />
         </button>
 
         <button
           type="button"
           onClick={handleZoomOut}
-          className="p-1.5 rounded hover:bg-[#1F242F] hover:text-white transition-colors"
+          className="p-1 rounded-md hover:bg-[#1F242F] hover:text-white transition-colors"
           title="Zoom Out (or Scroll Down)"
         >
-          <ZoomOut className="w-4 h-4" />
+          <ZoomOut className="w-3.5 h-3.5" strokeWidth={1.5} />
         </button>
 
-        <div className="w-[1px] h-4 bg-[#1F242F] mx-0.5" />
+        <div className="w-[1px] h-3.5 bg-[#1F242F] mx-0.5" />
 
         <button
           type="button"
           onClick={handleResetCamera}
-          className="p-1.5 rounded hover:bg-[#1F242F] hover:text-white transition-colors"
+          className="p-1 rounded-md hover:bg-[#1F242F] hover:text-white transition-colors"
           title="Reset Camera Framing"
         >
-          <RotateCcw className="w-4 h-4" />
+          <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
         </button>
 
-        <div className="px-2 text-[11px] font-mono text-zinc-400 tabular-nums">
+        <div className="px-1.5 text-[11px] font-mono text-zinc-400 tabular-nums">
           {Math.round(userScale * 100)}%
         </div>
       </div>
@@ -1351,7 +1351,7 @@ export function TruckCanvas({
       {/* Dimensional Tooltip HUD */}
       {hoveredBlock && mousePos && !isDragging && (
         <div
-          className="absolute pointer-events-none z-30 px-3.5 py-2.5 bg-[#111318]/95 border border-[#0066FF] shadow-2xl backdrop-blur-md rounded-lg text-xs font-sans transition-transform duration-75 text-white"
+          className="absolute pointer-events-none z-30 px-3 py-2 bg-[#111318]/95 border border-[#0066FF] backdrop-blur-md rounded-md text-xs font-sans transition-transform duration-75 text-white"
           style={{
             left: Math.min(mousePos.x + 15, dimensions.width - 220),
             top: Math.max(10, Math.min(mousePos.y - 45, dimensions.height - 130)),

@@ -202,7 +202,7 @@ export function AppShell({
       {/* ================================================================= */}
       <div className="hidden lg:flex h-[calc(100vh-3.5rem)] min-h-[600px] shrink-0 overflow-hidden">
         {/* Left Column (320px): Inventory Drawer */}
-        <div className="w-[320px] shrink-0 h-full overflow-hidden shadow-2xl z-10">
+        <div className="w-[320px] shrink-0 h-full overflow-hidden border-r border-[#1F242F] z-10">
           <InventoryDrawer
             selectedPreset={selectedPreset}
             onSelectPreset={handleSelectPreset}
@@ -231,7 +231,7 @@ export function AppShell({
             />
 
             {packResult.unpackedItems.length > 0 && (
-              <div className="absolute bottom-4 left-4 z-20 max-w-xs p-3 rounded-lg bg-[#EF4444]/15 border border-[#EF4444]/50 backdrop-blur-md text-xs text-white shadow-xl">
+              <div className="absolute bottom-4 left-4 z-20 max-w-xs p-3 rounded-md bg-[#EF4444]/15 border border-[#EF4444]/50 backdrop-blur-md text-xs text-white">
                 <div className="font-semibold text-[#EF4444] mb-1">
                   {packResult.unpackedItems.length} items exceed capacity
                 </div>
@@ -243,7 +243,7 @@ export function AppShell({
           </div>
 
           {/* Bottom Capacity HUD */}
-          <div className="p-4 bg-[#090A0C]/95 backdrop-blur border-t border-[#1F242F] shrink-0 z-10">
+          <div className="p-3.5 bg-[#090A0C]/95 backdrop-blur border-t border-[#1F242F] shrink-0 z-10">
             <CapacityGauge
               capacityResult={capacityResult}
               onUpgradeTruck={(nextId) => setSelectedTruckId(nextId)}
@@ -252,7 +252,7 @@ export function AppShell({
         </main>
 
         {/* Right Column (340px): Conversion Card */}
-        <div className="w-[340px] shrink-0 h-full overflow-hidden shadow-2xl z-10">
+        <div className="w-[340px] shrink-0 h-full overflow-hidden border-l border-[#1F242F] z-10">
           <ConversionCard
             truck={currentTruck}
             capacityResult={capacityResult}
@@ -308,9 +308,9 @@ export function AppShell({
                   setMobileTab('quote');
                   setIsMobileSheetOpen(true);
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
                   mobileTab === 'quote'
-                    ? 'bg-[#FF5500] text-white shadow-sm'
+                    ? 'bg-[#FF5500] text-white'
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
