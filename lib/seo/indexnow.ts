@@ -20,17 +20,17 @@ export function getIndexNowKey(): string {
 }
 
 export function getIndexNowHost(baseUrl?: string): string {
-  const urlStr = baseUrl || process.env.NEXT_PUBLIC_SITE_URL || 'https://trucksizer.com';
+  const urlStr = baseUrl || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com';
   try {
     const parsed = new URL(urlStr);
     return parsed.hostname;
   } catch {
-    return 'trucksizer.com';
+    return 'www.trucksizer.com';
   }
 }
 
 export function getAllSiteUrls(baseUrl?: string): string[] {
-  const siteUrl = (baseUrl || process.env.NEXT_PUBLIC_SITE_URL || 'https://trucksizer.com').replace(/\/$/, '');
+  const siteUrl = (baseUrl || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com').replace(/\/$/, '');
 
   const staticUrls = [
     siteUrl,

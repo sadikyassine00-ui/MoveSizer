@@ -21,26 +21,28 @@ describe('IndexNow Protocol Engine', () => {
     expect(getIndexNowHost('https://sub.domain.org/path')).toBe('sub.domain.org');
   });
 
-  it('gathers all programmatic and static URLs (19 total)', () => {
-    const urls = getAllSiteUrls('https://trucksizer.com');
-    expect(urls.length).toBe(19);
+  it('gathers all programmatic and static URLs (21 total)', () => {
+    const urls = getAllSiteUrls('https://www.trucksizer.com');
+    expect(urls.length).toBe(21);
 
     // Static pages
-    expect(urls).toContain('https://trucksizer.com');
-    expect(urls).toContain('https://trucksizer.com/how-we-calculate');
-    expect(urls).toContain('https://trucksizer.com/privacy');
-    expect(urls).toContain('https://trucksizer.com/terms');
+    expect(urls).toContain('https://www.trucksizer.com');
+    expect(urls).toContain('https://www.trucksizer.com/how-we-calculate');
+    expect(urls).toContain('https://www.trucksizer.com/privacy');
+    expect(urls).toContain('https://www.trucksizer.com/terms');
 
     // Dwelling routes
-    expect(urls).toContain('https://trucksizer.com/truck-size/studio-apartment');
-    expect(urls).toContain('https://trucksizer.com/truck-size/1-bedroom-apartment');
-    expect(urls).toContain('https://trucksizer.com/truck-size/2-bedroom-apartment');
-    expect(urls).toContain('https://trucksizer.com/truck-size/3-bedroom-home');
-    expect(urls).toContain('https://trucksizer.com/truck-size/4-bedroom-house');
+    expect(urls).toContain('https://www.trucksizer.com/truck-size/studio-apartment');
+    expect(urls).toContain('https://www.trucksizer.com/truck-size/1-bedroom-apartment');
+    expect(urls).toContain('https://www.trucksizer.com/truck-size/2-bedroom-apartment');
+    expect(urls).toContain('https://www.trucksizer.com/truck-size/2-bedroom-house');
+    expect(urls).toContain('https://www.trucksizer.com/truck-size/3-bedroom-house');
+    expect(urls).toContain('https://www.trucksizer.com/truck-size/3-bedroom-home');
+    expect(urls).toContain('https://www.trucksizer.com/truck-size/4-bedroom-house');
 
     // Single item fit routes
-    expect(urls).toContain('https://trucksizer.com/will-it-fit/king-mattress-in-10ft-truck');
-    expect(urls).toContain('https://trucksizer.com/will-it-fit/sectional-sofa-in-15ft-truck');
+    expect(urls).toContain('https://www.trucksizer.com/will-it-fit/king-mattress-in-10ft-truck');
+    expect(urls).toContain('https://www.trucksizer.com/will-it-fit/sectional-sofa-in-15ft-truck');
   });
 
   it('rejects empty URL submission gracefully', async () => {

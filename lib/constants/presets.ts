@@ -95,6 +95,16 @@ export const DWELLING_SLUG_MAP: Record<string, { presetId: PresetId; defaultTruc
     defaultTruck: '15ft',
     title: '2-Bedroom Apartment',
   },
+  '2-bedroom-house': {
+    presetId: '1-2_bed',
+    defaultTruck: '20ft',
+    title: '2-Bedroom House',
+  },
+  '3-bedroom-house': {
+    presetId: '3+_bed',
+    defaultTruck: '20ft',
+    title: '3-Bedroom House',
+  },
   '3-bedroom-home': {
     presetId: '3+_bed',
     defaultTruck: '20ft',

@@ -4,13 +4,15 @@
  * Participating search engines: Bing, Yandex, Seznam, Naver, etc.
  */
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://trucksizer.com').replace(/\/$/, '');
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com').replace(/\/$/, '');
 const KEY = process.env.INDEXNOW_KEY || '7d5b128532f64ab896e30bca238a8e52';
 
 const DWELLING_SLUGS = [
   'studio-apartment',
   '1-bedroom-apartment',
   '2-bedroom-apartment',
+  '2-bedroom-house',
+  '3-bedroom-house',
   '3-bedroom-home',
   '4-bedroom-house',
 ];

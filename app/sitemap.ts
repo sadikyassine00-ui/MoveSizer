@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { DWELLING_SLUG_MAP } from '@/lib/constants/presets';
+import { getAllDwellingSlugs } from '@/lib/seo/dwellings';
 
 const KNOWN_FIT_SLUGS = [
   'king-mattress-in-10ft-truck',
@@ -15,7 +15,7 @@ const KNOWN_FIT_SLUGS = [
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://trucksizer.com';
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com').replace(/\/$/, '');
 
   const staticPages: MetadataRoute.Sitemap = [
     {
@@ -44,20 +44,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  // Dwelling guides: staggered realistic lastmod dates
-  const dwellingPages: MetadataRoute.Sitemap = Object.keys(DWELLING_SLUG_MAP).map(
+  // Dwelling guides: priority 0.8
+  const dwellingPages: MetadataRoute.Sitemap = getAllDwellingSlugs().map(
     (dwelling, idx) => ({
       url: `${baseUrl}/truck-size/${dwelling}`,
-      lastModified: new Date(Date.UTC(2026, 8, 1 + (idx % 3))), // 2026-09-01 to 2026-09-03
+      lastModified: new Date(Date.UTC(2026, 8, 1 + (idx % 3))),
       changeFrequency: 'weekly',
-      priority: 0.85,
+      priority: 0.8,
     })
   );
 
-  // Single item fit guides: staggered realistic lastmod dates
+  // Single item fit guides: priority 0.75
   const fitPages: MetadataRoute.Sitemap = KNOWN_FIT_SLUGS.map((slug, idx) => ({
     url: `${baseUrl}/will-it-fit/${slug}`,
-    lastModified: new Date(Date.UTC(2026, 7, 20 + (idx % 10))), // 2026-08-20 to 2026-08-30
+    lastModified: new Date(Date.UTC(2026, 7, 20 + (idx % 10))),
     changeFrequency: 'monthly',
     priority: 0.75,
   }));
