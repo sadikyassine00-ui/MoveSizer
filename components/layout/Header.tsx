@@ -2,14 +2,11 @@
 
 import React from 'react';
 import { TRUCKS, TRUCK_ORDER, TruckId } from '@/lib/constants/trucks';
-import { PRESETS, PresetId } from '@/lib/constants/presets';
 import { Truck, RotateCcw, FileText, Menu, HelpCircle } from 'lucide-react';
 
 interface HeaderProps {
   selectedTruckId: TruckId;
   onSelectTruckId: (id: TruckId) => void;
-  selectedPreset: PresetId | null;
-  onSelectPreset: (presetId: PresetId) => void;
   unitSystem: 'imperial' | 'metric';
   onToggleUnitSystem: () => void;
   onReset: () => void;
@@ -21,8 +18,6 @@ interface HeaderProps {
 export function Header({
   selectedTruckId,
   onSelectTruckId,
-  selectedPreset,
-  onSelectPreset,
   unitSystem,
   onToggleUnitSystem,
   onReset,
@@ -31,49 +26,24 @@ export function Header({
   onOpenHowItWorks,
 }: HeaderProps) {
   return (
-    <header className="h-14 border-b border-[#1F242F] bg-[#111318] px-4 flex items-center justify-between shrink-0 z-30 select-none">
-      {/* Brand Logo */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 font-semibold text-base tracking-tight text-white">
-          <div className="p-1 rounded-md bg-[#FF5500] text-black">
-            <Truck className="w-4 h-4 text-white" strokeWidth={1.75} />
+    <header className="h-14 border-b border-[#1F242F] bg-[#111318] px-3 sm:px-5 flex items-center justify-between shrink-0 z-30 select-none">
+      {/* 1. Left: Brand Identity */}
+      <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 font-semibold text-sm sm:text-base tracking-tight text-white">
+          <div className="p-1 rounded-md bg-[#FF5500] text-black shrink-0">
+            <Truck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" strokeWidth={1.75} />
           </div>
-          <span>
+          <span className="font-bold tracking-tight">
             TRUCK<span className="text-[#FF5500]">SIZER</span>
           </span>
         </div>
-        <span className="hidden xl:inline-block text-xs text-zinc-500 border-l border-[#1F242F] pl-3">
-          Commercial Cargo Volume & Vehicle Sizing Engine
+        <span className="hidden 2xl:inline-block text-[11px] text-zinc-500 border-l border-[#1F242F] pl-3 font-mono">
+          Cargo Volume &amp; Fit Engine
         </span>
       </div>
 
-      {/* Quick Presets (Desktop) */}
-      <div className="hidden lg:flex items-center gap-1 bg-[#090A0C] px-1.5 py-1 rounded-md border border-[#1F242F]">
-        <span className="text-[10px] uppercase font-semibold text-zinc-500 mr-1 px-1 font-mono">
-          Profile:
-        </span>
-        {(['studio', '1-2_bed', '3+_bed'] as PresetId[]).map((pid) => {
-          const p = PRESETS[pid];
-          const isActive = selectedPreset === pid;
-          return (
-            <button
-              key={pid}
-              type="button"
-              onClick={() => onSelectPreset(pid)}
-              className={`px-2 py-0.5 rounded-md text-xs font-medium transition-colors ${
-                isActive
-                  ? 'bg-[#FF5500] text-white'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              {p.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Truck Selector Buttons */}
-      <div className="flex items-center gap-1 bg-[#090A0C] p-1 rounded-md border border-[#1F242F]">
+      {/* 2. Center: Vehicle Size Selector */}
+      <div className="flex items-center gap-1 bg-[#090A0C] p-1 rounded-lg border border-[#1F242F]">
         {TRUCK_ORDER.map((tid) => {
           const trk = TRUCKS[tid];
           const isSelected = selectedTruckId === tid;
@@ -82,10 +52,10 @@ export function Header({
               key={tid}
               type="button"
               onClick={() => onSelectTruckId(tid)}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors font-mono tabular-nums ${
+              className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-medium transition-all font-mono tabular-nums ${
                 isSelected
-                  ? 'bg-[#0066FF] text-white'
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-[#0066FF] text-white shadow-sm font-semibold'
+                  : 'text-zinc-400 hover:text-white hover:bg-white/5'
               }`}
             >
               {trk.name.split(' ')[0]}
@@ -94,16 +64,16 @@ export function Header({
         })}
       </div>
 
-      {/* Action Controls */}
-      <div className="flex items-center gap-2">
-        {/* Imperial / Metric Toggle */}
+      {/* 3. Right: Utility Strip & Navigation */}
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* Unit Toggle Pill */}
         <button
           type="button"
           onClick={onToggleUnitSystem}
-          className="px-2.5 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] text-xs font-medium text-zinc-300 hover:text-white transition-colors"
-          title="Toggle Imperial / Metric Units"
+          className="px-2 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-[11px] font-mono text-zinc-300 hover:text-white transition-colors"
+          title={`Switch to ${unitSystem === 'imperial' ? 'metric' : 'imperial'} units`}
         >
-          {unitSystem === 'imperial' ? 'Inches / Cu Ft' : 'Meters / Cu M'}
+          {unitSystem === 'imperial' ? 'IN / CU FT' : 'M / CU M'}
         </button>
 
         {/* Load Manifest Shortcut */}
@@ -111,44 +81,44 @@ export function Header({
           <button
             type="button"
             onClick={onOpenManifest}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-medium text-zinc-300 hover:text-white transition-colors"
+            className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-medium text-zinc-300 hover:text-white transition-colors"
+            title="View & Print Certified Load Manifest"
           >
             <FileText className="w-3.5 h-3.5 text-[#0066FF]" strokeWidth={1.5} />
             <span>Manifest</span>
           </button>
         )}
 
-        {/* Reset Canvas Button */}
-        <button
-          type="button"
-          onClick={onReset}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
-          title="Reset canvas and inventory"
-        >
-          <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
-          <span className="hidden md:inline">Reset</span>
-        </button>
-
-        {/* Quick "How It Works" Trigger */}
+        {/* How It Works Modal Trigger */}
         {onOpenHowItWorks && (
           <button
             type="button"
             onClick={onOpenHowItWorks}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
-            title="How TruckSizer Works"
+            className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
+            title="Learn how packing heuristics and safety buffers work"
           >
             <HelpCircle className="w-3.5 h-3.5 text-zinc-400" strokeWidth={1.5} />
-            <span className="hidden md:inline">How It Works</span>
+            <span className="hidden lg:inline">How It Works</span>
           </button>
         )}
 
-        {/* Site Directory / Slide-Over Navigation Trigger */}
+        {/* Reset Canvas */}
+        <button
+          type="button"
+          onClick={onReset}
+          className="p-1.5 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-zinc-400 hover:text-white transition-colors"
+          title="Reset inventory and canvas"
+        >
+          <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
+        </button>
+
+        {/* Site Directory Drawer Trigger */}
         {onOpenNav && (
           <button
             type="button"
             onClick={onOpenNav}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-medium text-zinc-300 hover:text-white transition-colors"
-            title="Open Site Directory & Sizing Guides"
+            className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-medium text-zinc-300 hover:text-white transition-colors"
+            title="Open Site Directory & Guides"
           >
             <Menu className="w-3.5 h-3.5 text-[#0066FF]" strokeWidth={1.5} />
             <span className="hidden sm:inline">Directory</span>

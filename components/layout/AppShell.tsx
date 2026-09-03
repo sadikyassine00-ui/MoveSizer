@@ -7,7 +7,6 @@ import { calculateBoxRequirements, DensityLevel } from '@/lib/engine/boxCalculat
 import { calculateCapacity } from '@/lib/engine/capacityEngine';
 import { packTruck, CustomItemInput, DrawableBlock } from '@/lib/engine/packEngine';
 import { Header } from '@/components/layout/Header';
-import { WorkflowStepper, WorkflowStepNumber } from '@/components/layout/WorkflowStepper';
 import { TruckCanvas } from '@/components/visualizer/TruckCanvas';
 import { CapacityGauge } from '@/components/visualizer/CapacityGauge';
 import { InventoryDrawer } from '@/components/ui/InventoryDrawer';
@@ -60,14 +59,9 @@ export function AppShell({
   const [mobileTab, setMobileTab] = useState<'inventory' | 'quote'>('inventory');
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(true);
 
-  // Progressive disclosure & Onboarding state
-  const [currentStep, setCurrentStep] = useState<WorkflowStepNumber>(1);
+  // Modal & Drawer states
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
-
-  // Site Directory Slide-Over Navigation Drawer state
   const [isNavDrawerOpen, setIsNavDrawerOpen] = useState(false);
-
-  // Load Manifest Modal state
   const [isManifestOpen, setIsManifestOpen] = useState(false);
   const [manifestData, setManifestData] = useState<{
     leadId: string;
@@ -107,7 +101,6 @@ export function AppShell({
 
       setInventory(newInventory);
       setSelectedBlock(null);
-      setCurrentStep(1);
       trackPresetSelected(presetId, preset.defaultTruck);
     },
     [density]
@@ -135,26 +128,22 @@ export function AppShell({
   const handleBedroomsChange = (newBeds: number) => {
     setBedrooms(newBeds);
     setSelectedPreset(null);
-    setCurrentStep(2);
     updateBoxEstimates(newBeds, occupants, density);
   };
 
   const handleOccupantsChange = (newOccs: number) => {
     setOccupants(newOccs);
     setSelectedPreset(null);
-    setCurrentStep(2);
     updateBoxEstimates(bedrooms, newOccs, density);
   };
 
   const handleDensityChange = (newDens: DensityLevel) => {
     setDensity(newDens);
-    setCurrentStep(2);
     updateBoxEstimates(bedrooms, occupants, newDens);
   };
 
   const handleItemQuantityChange = (itemId: string, newQty: number) => {
     setSelectedPreset(null);
-    setCurrentStep(2);
     setInventory((prev) => ({
       ...prev,
       [itemId]: newQty,
@@ -163,19 +152,16 @@ export function AppShell({
 
   const handleAddCustomItem = (item: CustomItemInput) => {
     setCustomItems((prev) => [...prev, item]);
-    setCurrentStep(2);
   };
 
   const handleRemoveCustomItem = (id: string) => {
     setCustomItems((prev) => prev.filter((it) => it.id !== id));
-    setCurrentStep(2);
   };
 
   const handleReset = () => {
     handleSelectPreset('studio');
     setCustomItems([]);
     setSelectedBlock(null);
-    setCurrentStep(1);
   };
 
   const currentTruck = TRUCKS[selectedTruckId];
@@ -187,23 +173,6 @@ export function AppShell({
   const capacityResult = useMemo(() => {
     return calculateCapacity(currentTruck, inventory);
   }, [currentTruck, inventory]);
-
-  // Advance to Step 3 when capacity hits 70%+
-  useEffect(() => {
-    if (capacityResult.fillPercentage >= 70) {
-      setCurrentStep(3);
-    }
-  }, [capacityResult.fillPercentage]);
-
-  const handleStepClick = (step: WorkflowStepNumber) => {
-    setCurrentStep(step);
-    if (step === 3) {
-      setMobileTab('quote');
-      setIsMobileSheetOpen(true);
-    } else {
-      setMobileTab('inventory');
-    }
-  };
 
   const handleOpenManifestWithInfo = (info: {
     leadId: string;
@@ -221,8 +190,6 @@ export function AppShell({
       <Header
         selectedTruckId={selectedTruckId}
         onSelectTruckId={setSelectedTruckId}
-        selectedPreset={selectedPreset}
-        onSelectPreset={handleSelectPreset}
         unitSystem={unitSystem}
         onToggleUnitSystem={() =>
           setUnitSystem((prev) => (prev === 'imperial' ? 'metric' : 'imperial'))
@@ -233,17 +200,11 @@ export function AppShell({
         onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
       />
 
-      {/* 2. Ambient Workflow Stepper */}
-      <WorkflowStepper
-        currentStep={currentStep}
-        onStepClick={handleStepClick}
-      />
-
-      {/* 3. Main Responsive Viewport */}
+      {/* 2. Main Responsive Viewport */}
       {/* ================================================================= */}
       {/* DESKTOP VIEWPORT (≥ 1024px): 3-Column Layout with Inline Form     */}
       {/* ================================================================= */}
-      <div className="hidden lg:flex h-[calc(100vh-5.5rem)] min-h-[580px] shrink-0 overflow-hidden">
+      <div className="hidden lg:flex h-[calc(100vh-3.5rem)] min-h-[600px] shrink-0 overflow-hidden">
         {/* Left Column (300px): Streamlined Inventory Drawer */}
         <div className="w-[300px] shrink-0 h-full overflow-hidden border-r border-[#1F242F] z-10">
           <InventoryDrawer
@@ -309,7 +270,7 @@ export function AppShell({
       {/* ================================================================= */}
       {/* MOBILE VIEWPORT (< 1024px): Sticky Canvas + Bottom Sheet          */}
       {/* ================================================================= */}
-      <div className="flex lg:hidden flex-col h-[calc(100vh-5.5rem)] min-h-[580px] shrink-0 overflow-hidden relative">
+      <div className="flex lg:hidden flex-col h-[calc(100vh-3.5rem)] min-h-[580px] shrink-0 overflow-hidden relative">
         {/* Top 45%: Sticky 2.5D Canvas */}
         <div className="h-[45%] w-full bg-[#090A0C] relative shrink-0 border-b border-[#1F242F]">
           <TruckCanvas
@@ -334,7 +295,6 @@ export function AppShell({
                 onClick={() => {
                   setMobileTab('inventory');
                   setIsMobileSheetOpen(true);
-                  setCurrentStep(2);
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                   mobileTab === 'inventory'
@@ -351,7 +311,6 @@ export function AppShell({
                 onClick={() => {
                   setMobileTab('quote');
                   setIsMobileSheetOpen(true);
-                  setCurrentStep(3);
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
                   mobileTab === 'quote'
@@ -423,7 +382,6 @@ export function AppShell({
             onClick={() => {
               setMobileTab('quote');
               setIsMobileSheetOpen(true);
-              setCurrentStep(3);
             }}
             className="h-11 p-2.5 bg-[#090A0C] border-t border-[#1F242F] flex items-center justify-between text-xs cursor-pointer hover:bg-[#111318] transition-colors shrink-0"
           >
