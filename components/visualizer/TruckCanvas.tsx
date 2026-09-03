@@ -88,6 +88,18 @@ export function TruckCanvas({
   const dragStartRef = useRef<Point2D>({ x: 0, y: 0 });
   const hasDraggedRef = useRef<boolean>(false);
 
+  // Active refs for native wheel and touch handlers without stale closure lag
+  const userScaleRef = useRef<number>(1.0);
+  const panOffsetRef = useRef<Point2D>({ x: 0, y: 0 });
+
+  useEffect(() => {
+    userScaleRef.current = userScale;
+  }, [userScale]);
+
+  useEffect(() => {
+    panOffsetRef.current = panOffset;
+  }, [panOffset]);
+
   // Block hover state
   const [hoveredBlock, setHoveredBlock] = useState<DrawableBlock | null>(null);
   const [mousePos, setMousePos] = useState<Point2D | null>(null);
@@ -1052,40 +1064,59 @@ export function TruckCanvas({
   }, [render]);
 
   // =========================================================================
-  // CAMERA INTERACTIONS: WHEEL ZOOM (Focal Zoom on Mouse Point)
+  // CAMERA INTERACTIONS: NATIVE WHEEL ZOOM (Strictly Prevents Page Scrolling)
+  // Attached directly to canvas DOM element with { passive: false }
+  // When cursor is inside the canvas, zoom in/out only.
+  // When cursor is outside, the page scrolls normally.
   // =========================================================================
-  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const onNativeWheel = (e: WheelEvent) => {
+      // Strictly prevent browser page scrolling while cursor is inside canvas
+      e.preventDefault();
+      e.stopPropagation();
 
-    const zoomFactor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-    const newScale = Math.max(0.4, Math.min(3.5, userScale * zoomFactor));
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
 
-    if (newScale === userScale) return;
+      // Handle wheel and trackpad pinch
+      const zoomFactor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+      const currentScale = userScaleRef.current;
+      const newScale = Math.max(0.4, Math.min(3.5, currentScale * zoomFactor));
 
-    const { baseScale, midX, midY } = baseMetricsRef.current;
-    const currentScale = baseScale * userScale;
-    const nextScale = baseScale * newScale;
+      if (newScale === currentScale) return;
 
-    const currentOffsetX = dimensions.width / 2 - midX * currentScale + panOffset.x;
-    const currentOffsetY = dimensions.height / 2 - midY * currentScale + 15 + panOffset.y;
+      const { baseScale, midX, midY } = baseMetricsRef.current;
+      const currentWorldScale = baseScale * currentScale;
+      const nextWorldScale = baseScale * newScale;
 
-    // Preserve focal point under mouse
-    const ratio = nextScale / currentScale;
-    const nextOffsetX = mouseX - (mouseX - currentOffsetX) * ratio;
-    const nextOffsetY = mouseY - (mouseY - currentOffsetY) * ratio;
+      const currentPan = panOffsetRef.current;
+      const currentOffsetX = dimensions.width / 2 - midX * currentWorldScale + currentPan.x;
+      const currentOffsetY = dimensions.height / 2 - midY * currentWorldScale + 15 + currentPan.y;
 
-    const nextPanX = nextOffsetX - (dimensions.width / 2 - midX * nextScale);
-    const nextPanY = nextOffsetY - (dimensions.height / 2 - midY * nextScale + 15);
+      // Preserve focal point under mouse
+      const ratio = nextWorldScale / currentWorldScale;
+      const nextOffsetX = mouseX - (mouseX - currentOffsetX) * ratio;
+      const nextOffsetY = mouseY - (mouseY - currentOffsetY) * ratio;
 
-    setUserScale(newScale);
-    setPanOffset({ x: nextPanX, y: nextPanY });
-  };
+      const nextPanX = nextOffsetX - (dimensions.width / 2 - midX * nextWorldScale);
+      const nextPanY = nextOffsetY - (dimensions.height / 2 - midY * nextWorldScale + 15);
+
+      userScaleRef.current = newScale;
+      panOffsetRef.current = { x: nextPanX, y: nextPanY };
+
+      setUserScale(newScale);
+      setPanOffset({ x: nextPanX, y: nextPanY });
+    };
+
+    canvas.addEventListener('wheel', onNativeWheel, { passive: false });
+    return () => {
+      canvas.removeEventListener('wheel', onNativeWheel);
+    };
+  }, [dimensions]);
 
   // =========================================================================
   // CAMERA INTERACTIONS: MOUSE DRAG PANNING & CLICK DETECTION
@@ -1116,10 +1147,14 @@ export function TruckCanvas({
         hasDraggedRef.current = true;
       }
 
-      setPanOffset((prev) => ({
-        x: prev.x + dx,
-        y: prev.y + dy,
-      }));
+      setPanOffset((prev) => {
+        const next = {
+          x: prev.x + dx,
+          y: prev.y + dy,
+        };
+        panOffsetRef.current = next;
+        return next;
+      });
 
       dragStartRef.current = { x: e.clientX, y: e.clientY };
       return;
@@ -1162,31 +1197,42 @@ export function TruckCanvas({
 
   // Reset Camera View
   const handleResetCamera = () => {
+    userScaleRef.current = 1.0;
+    panOffsetRef.current = { x: 0, y: 0 };
     setUserScale(1.0);
     setPanOffset({ x: 0, y: 0 });
   };
 
   const handleZoomIn = () => {
-    setUserScale((prev) => Math.min(3.5, prev * 1.25));
+    setUserScale((prev) => {
+      const next = Math.min(3.5, prev * 1.25);
+      userScaleRef.current = next;
+      return next;
+    });
   };
 
   const handleZoomOut = () => {
-    setUserScale((prev) => Math.max(0.4, prev / 1.25));
+    setUserScale((prev) => {
+      const next = Math.max(0.4, prev / 1.25);
+      userScaleRef.current = next;
+      return next;
+    });
   };
 
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-full min-h-[440px] bg-[#090A0C] overflow-hidden select-none ${className}`}
+      className={`relative w-full h-full min-h-[440px] bg-[#090A0C] overflow-hidden select-none overscroll-contain touch-none ${className}`}
+      style={{ overscrollBehavior: 'contain', touchAction: 'none' }}
     >
       <canvas
         ref={canvasRef}
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
-        className={`w-full h-full block ${
+        style={{ overscrollBehavior: 'contain', touchAction: 'none' }}
+        className={`w-full h-full block overscroll-contain touch-none ${
           isDragging ? 'cursor-grabbing' : 'cursor-grab'
         }`}
       />
