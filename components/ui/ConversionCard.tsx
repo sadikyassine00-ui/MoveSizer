@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TruckSpec } from '@/lib/constants/trucks';
 import { CapacityCalculationResult } from '@/lib/engine/capacityEngine';
 import { CustomItemInput } from '@/lib/engine/packEngine';
+import { calculateRoutePricing, RoutePricingResult } from '@/lib/engine/pricingEngine';
 import {
   ShieldCheck,
   Lock,
@@ -16,7 +17,6 @@ import {
   MapPin,
   Mail,
   Loader2,
-  ChevronLeft,
 } from 'lucide-react';
 import { trackQuoteFormSubmitted } from '@/lib/analytics/events';
 
@@ -60,6 +60,9 @@ export function ConversionCard({
   const [moveDate, setMoveDate] = useState('');
   const [email, setEmail] = useState('');
 
+  const [pricingResult, setPricingResult] = useState<RoutePricingResult | null>(null);
+  const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [leadResult, setLeadResult] = useState<{
@@ -69,6 +72,15 @@ export function ConversionCard({
 
   const todayStr = new Date().toISOString().split('T')[0];
   const ratePreview = BASE_RATES[truck.id] || BASE_RATES['15ft'];
+
+  // Keep pricing synced when truck size changes while in Step 2
+  useEffect(() => {
+    if (step === 2 && originZip && destinationZip && ZIP_REGEX.test(originZip) && ZIP_REGEX.test(destinationZip)) {
+      calculateRoutePricing(originZip.trim(), destinationZip.trim(), truck.id).then((res) => {
+        setPricingResult(res);
+      });
+    }
+  }, [truck.id, step, originZip, destinationZip]);
 
   // Validate Step 1 (ZIPs)
   const validateStep1 = () => {
@@ -110,10 +122,24 @@ export function ConversionCard({
     return Object.keys(errs).length === 0;
   };
 
-  const handleStep1Proceed = (e: React.FormEvent) => {
+  const handleStep1Proceed = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateStep1()) {
+    if (!validateStep1()) return;
+
+    setIsCalculatingRoute(true);
+    try {
+      const pricing = await calculateRoutePricing(
+        originZip.trim(),
+        destinationZip.trim(),
+        truck.id
+      );
+      setPricingResult(pricing);
       setStep(2);
+    } catch {
+      // Graceful degradation
+      setStep(2);
+    } finally {
+      setIsCalculatingRoute(false);
     }
   };
 
@@ -211,7 +237,7 @@ export function ConversionCard({
                 {leadResult.priceRange.formatted}
               </div>
               <div className="text-[11px] text-zinc-400">
-                Based on {truck.name} capacity ({capacityResult.totalVolumeCuFt} cu ft cargo) from ZIP {originZip} to {destinationZip}.
+                Based on {truck.name} capacity ({capacityResult.totalVolumeCuFt} cu ft cargo) and ~{pricingResult?.roadMiles.toLocaleString() || '250'} road miles from ZIP {originZip} to {destinationZip}.
               </div>
             </div>
 
@@ -230,7 +256,7 @@ export function ConversionCard({
                 className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-md bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-semibold transition-colors duration-150"
               >
                 <FileText className="w-3.5 h-3.5" strokeWidth={1.5} />
-                <span>View & Print Load Manifest</span>
+                <span>View &amp; Print Load Manifest</span>
               </button>
 
               <button
@@ -310,28 +336,43 @@ export function ConversionCard({
             {step === 2 && (
               <div className="space-y-3 pt-2 border-t border-[#1F242F] animate-in fade-in slide-in-from-top-2 duration-200">
                 {/* Route Summary Pill */}
-                <div className="flex items-center justify-between p-2 rounded-md bg-[#090A0C] border border-[#1F242F] text-xs">
-                  <div>
-                    <span className="text-[10px] text-zinc-500 uppercase block font-mono">Verified Route</span>
-                    <span className="font-semibold text-white font-mono tabular-nums">
-                      {originZip} → {destinationZip}
-                    </span>
+                <div className="p-2.5 rounded-md bg-[#090A0C] border border-[#1F242F] text-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 uppercase font-mono tracking-wider">
+                      <span>Verified Route</span>
+                      {pricingResult?.roadMiles && (
+                        <span>• ~{pricingResult.roadMiles.toLocaleString()} road miles</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="text-[10px] text-[#0066FF] hover:underline font-medium shrink-0"
+                    >
+                      Edit ZIPs
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setStep(1)}
-                    className="text-[10px] text-[#0066FF] hover:underline font-medium"
-                  >
-                    Edit ZIPs
-                  </button>
+                  <span className="font-semibold text-white font-mono tabular-nums text-xs truncate block">
+                    {pricingResult?.originPlace ? `${pricingResult.originPlace} (${originZip})` : originZip} → {pricingResult?.destinationPlace ? `${pricingResult.destinationPlace} (${destinationZip})` : destinationZip}
+                  </span>
+                  {pricingResult?.isLocal !== undefined && (
+                    <span className="text-[10px] text-zinc-400 font-sans block">
+                      {pricingResult.isLocal ? 'Local Metro Service (Day Rate + Crew)' : 'Interstate Long-Distance Freight'}
+                    </span>
+                  )}
                 </div>
 
-                {/* Instant Pricing Estimate Badge */}
-                <div className="p-2.5 rounded-md bg-[#10B981]/10 border border-[#10B981]/30 text-xs flex items-center justify-between">
-                  <span className="text-zinc-300">Estimated Carrier Rate:</span>
-                  <span className="font-bold text-[#10B981] font-mono tabular-nums">
-                    {ratePreview.formatted}
-                  </span>
+                {/* Instant Dynamic Pricing Estimate Badge */}
+                <div className="p-2.5 rounded-md bg-[#10B981]/10 border border-[#10B981]/30 text-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-300 font-medium">Estimated Carrier Rate:</span>
+                    <span className="font-bold text-[#10B981] font-mono tabular-nums text-sm">
+                      {pricingResult ? pricingResult.formatted : ratePreview.formatted}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-zinc-400 leading-tight">
+                    {pricingResult?.caption || `Estimated based on ~250 road miles and ${truck.name} cargo volume.`}
+                  </p>
                 </div>
 
                 {/* Move Date */}
@@ -391,10 +432,20 @@ export function ConversionCard({
             {step === 1 ? (
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-md bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-semibold tracking-wider uppercase transition-colors duration-150 mt-2"
+                disabled={isCalculatingRoute}
+                className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-md bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-semibold tracking-wider uppercase transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
               >
-                <span>Calculate Route &amp; Rates</span>
-                <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+                {isCalculatingRoute ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Calculating Mileage &amp; Rates...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Calculate Route &amp; Rates</span>
+                    <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+                  </>
+                )}
               </button>
             ) : (
               <button

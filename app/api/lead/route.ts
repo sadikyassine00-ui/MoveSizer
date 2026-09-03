@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { calculateRoutePricing } from '@/lib/engine/pricingEngine';
+import { TruckId } from '@/lib/constants/trucks';
 
 export interface LeadPayload {
   originZip: string;
@@ -70,15 +72,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate price estimate based on truck size and volume
-    const baseRates: Record<string, { low: number; high: number }> = {
-      '10ft': { low: 290, high: 490 },
-      '15ft': { low: 390, high: 650 },
-      '20ft': { low: 490, high: 790 },
-      '26ft': { low: 650, high: 990 },
-    };
-
-    const truckTier = baseRates[truckSize || '15ft'] || baseRates['15ft'];
+    // Generate dynamic price estimate based on real road mileage and truck size
+    const pricing = await calculateRoutePricing(
+      originZip.trim(),
+      destinationZip.trim(),
+      (truckSize as TruckId) || '15ft'
+    );
     
     // Generate unique click/lead UUID upon submission (Task 13)
     const leadUuid = typeof crypto !== 'undefined' && crypto.randomUUID
@@ -128,10 +127,11 @@ export async function POST(request: Request) {
       truckSize: truckSize || '15ft',
       cuFt: cuFt || 0,
       priceRange: {
-        low: truckTier.low,
-        high: truckTier.high,
-        formatted: `$${truckTier.low} – $${truckTier.high}`,
+        low: pricing.low,
+        high: pricing.high,
+        formatted: pricing.formatted,
       },
+      roadMiles: pricing.roadMiles,
       originZip,
       destinationZip,
       moveDate,

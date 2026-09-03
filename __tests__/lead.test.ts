@@ -55,7 +55,9 @@ describe('Task 8 & 12: Lead API Route Validation', () => {
     const data = await res.json();
     expect(data.success).toBe(true);
     expect(data.leadId).toMatch(/^TS-/);
-    expect(data.priceRange.low).toBe(390);
-    expect(data.priceRange.high).toBe(650);
+    expect(data.roadMiles).toBeGreaterThan(2500);
+    expect(data.priceRange.low).toBeGreaterThan(3000);
+    expect(data.priceRange.high).toBeGreaterThan(data.priceRange.low);
+    expect(data.priceRange.formatted).toMatch(/^\$[\d,]+ – \$[\d,]+$/);
   });
 });
