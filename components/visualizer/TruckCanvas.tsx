@@ -1385,11 +1385,19 @@ export function TruckCanvas({
             <span className="font-semibold text-[#F8F9FA] tracking-tight text-sm">
               {hoveredBlock.label}
             </span>
-            {hoveredBlock.isAttic && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#FF5500]/20 text-[#FF5500] font-semibold tracking-wide uppercase">
-                Attic
+            {hoveredBlock.isAttic ? (
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#FF5500]/20 text-[#FF5500] font-semibold tracking-wide uppercase font-mono">
+                Mom&apos;s Attic
               </span>
-            )}
+            ) : hoveredBlock.id.includes('bed') || hoveredBlock.id.includes('table') ? (
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#0066FF]/20 text-[#38BDF8] font-semibold tracking-wide uppercase font-mono">
+                Wall-Edge Stowed
+              </span>
+            ) : hoveredBlock.id.includes('sofa') || hoveredBlock.id.includes('loveseat') ? (
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#10B981]/20 text-[#34D399] font-semibold tracking-wide uppercase font-mono">
+                Oriented Vertical
+              </span>
+            ) : null}
           </div>
           <div className="space-y-0.5 text-zinc-300">
             <div className="flex justify-between gap-4">
@@ -1414,14 +1422,22 @@ export function TruckCanvas({
         </div>
       )}
 
-      {/* Top Left Truck Legend Badge */}
-      <div className="absolute top-4 left-4 z-10 flex flex-col gap-1 pointer-events-none">
+      {/* Top Left Truck Legend Badge & Technical Readout */}
+      <div className="absolute top-4 left-4 z-10 flex flex-col gap-1.5 pointer-events-none">
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111318]/90 border border-[#1F242F] backdrop-blur-sm">
           <div className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
           <span className="text-xs font-semibold text-white tracking-tight">
             {truck.name} <span className="text-zinc-400 font-normal tabular-nums">({truck.volumeCuFt} cu ft)</span>
           </span>
         </div>
+
+        {truck.attic && (
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#111318]/90 border border-[#1F242F] text-[10px] text-zinc-400 font-mono backdrop-blur-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
+            <span>Mom&apos;s Attic: Fragiles &amp; Box Tier Only (Max 500 lbs)</span>
+          </div>
+        )}
+
         <div className="text-[11px] text-zinc-500 px-1 tabular-nums flex items-center gap-1.5">
           <Move className="w-3 h-3 text-[#0066FF]" />
           <span>Click & drag to pan • Scroll to zoom</span>

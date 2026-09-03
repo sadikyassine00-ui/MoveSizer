@@ -12,7 +12,6 @@ import { CapacityGauge } from '@/components/visualizer/CapacityGauge';
 import { InventoryDrawer } from '@/components/ui/InventoryDrawer';
 import { ConversionCard } from '@/components/ui/ConversionCard';
 import { LoadManifestModal } from '@/components/ui/LoadManifestModal';
-import { HowItWorksModal } from '@/components/ui/HowItWorksModal';
 import { FooterInfoSection } from '@/components/layout/FooterInfoSection';
 import { NavDrawer } from '@/components/layout/NavDrawer';
 import { trackPresetSelected } from '@/lib/analytics/events';
@@ -60,7 +59,6 @@ export function AppShell({
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(true);
 
   // Modal & Drawer states
-  const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
   const [isNavDrawerOpen, setIsNavDrawerOpen] = useState(false);
   const [isManifestOpen, setIsManifestOpen] = useState(false);
   const [manifestData, setManifestData] = useState<{
@@ -190,14 +188,14 @@ export function AppShell({
       <Header
         selectedTruckId={selectedTruckId}
         onSelectTruckId={setSelectedTruckId}
+        selectedPreset={selectedPreset}
+        onSelectPreset={handleSelectPreset}
         unitSystem={unitSystem}
         onToggleUnitSystem={() =>
           setUnitSystem((prev) => (prev === 'imperial' ? 'metric' : 'imperial'))
         }
         onReset={handleReset}
-        onOpenManifest={() => setIsManifestOpen(true)}
         onOpenNav={() => setIsNavDrawerOpen(true)}
-        onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
       />
 
       {/* 2. Main Responsive Viewport */}
@@ -419,13 +417,6 @@ export function AppShell({
       <NavDrawer
         isOpen={isNavDrawerOpen}
         onClose={() => setIsNavDrawerOpen(false)}
-      />
-
-      {/* 6. How It Works Slide-Over Educational Modal */}
-      <HowItWorksModal
-        isOpen={isHowItWorksOpen}
-        onClose={() => setIsHowItWorksOpen(false)}
-        onOpenManifest={() => setIsManifestOpen(true)}
       />
     </div>
   );

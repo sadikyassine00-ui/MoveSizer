@@ -93,29 +93,56 @@ export function CapacityGauge({
         </div>
       </div>
 
-      {/* Horizontal Progress Bar */}
-      <div className="relative w-full h-2.5 bg-[#090A0C] border border-[#1F242F] rounded-full overflow-hidden p-0.5">
+      {/* Horizontal Progress Bar with 18% Safety Buffer Section */}
+      <div className="relative w-full h-3.5 bg-[#090A0C] border border-[#1F242F] rounded-full overflow-hidden p-0.5">
+        {/* Active Fill Bar */}
         <div
           className={`h-full rounded-full transition-all duration-500 ease-out ${statusConfig.barColor}`}
-          style={{ width: `${clampedProgress}%` }}
+          style={{ width: `${Math.min(100, Math.max(0, (totalVolumeCuFt / interiorVolumeCuFt) * 100))}%` }}
         />
+
+        {/* 18% Safety Buffer Cross-Hatched Section (from 82% to 100%) */}
         <div
-          className="absolute top-0 bottom-0 w-[1px] bg-white/20 z-10"
-          style={{ left: '70%' }}
-          title="Caution threshold (70%)"
-        />
+          className="absolute top-0 bottom-0 right-0 w-[18%] border-l border-amber-500/40 bg-[#1F242F]/70 flex items-center justify-center overflow-hidden"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(45deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.15) 3px, transparent 3px, transparent 6px)',
+          }}
+          title="18% Real-World Safety Buffer (Packing voids, wheel wells, and irregular cargo)"
+        >
+          <span className="text-[8px] font-mono font-bold text-amber-400/90 tracking-tighter uppercase select-none px-1">
+            Buffer
+          </span>
+        </div>
+
+        {/* 82% Usable Limit Marker */}
         <div
-          className="absolute top-0 bottom-0 w-[1px] bg-white/30 z-10"
-          style={{ left: '85%' }}
-          title="Critical threshold (85%)"
+          className="absolute top-0 bottom-0 w-[1px] bg-amber-400/60 z-10"
+          style={{ left: '82%' }}
+          title="100% Usable Capacity Limit (Safety buffer begins)"
         />
       </div>
 
       {/* Sub-bar Metadata */}
       <div className="flex flex-wrap items-center justify-between gap-3 pt-0.5 text-xs">
-        <div className="flex items-center gap-1.5 text-zinc-300 bg-[#090A0C] px-2.5 py-1 rounded-md border border-[#1F242F]">
-          <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" strokeWidth={1.5} />
-          <span>18% Real-World Packing Buffer Included</span>
+        {/* Contextual Micro-Popover for 18% Safety Buffer */}
+        <div className="relative group cursor-help">
+          <div
+            className="flex items-center gap-1.5 text-zinc-300 bg-[#090A0C] px-2.5 py-1 rounded-md border border-[#1F242F] group-hover:border-zinc-500 transition-colors"
+            title="Accounts for loose-pack voids, non-square cargo, and wheel-well intrusion."
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-[#10B981] shrink-0" strokeWidth={1.5} />
+            <span className="border-b border-dotted border-zinc-400 font-medium text-xs">
+              Includes 18% Packing Buffer
+            </span>
+          </div>
+
+          {/* Single-Sentence Native Micro-Popover */}
+          <div className="absolute left-0 bottom-full mb-1.5 hidden group-hover:flex items-center z-30 pointer-events-none transition-all duration-150">
+            <div className="px-3 py-1.5 rounded-md bg-[#181B22] border border-[#2D3545] shadow-xl text-[11px] text-zinc-200 whitespace-nowrap">
+              Accounts for loose-pack voids, non-square cargo, and wheel-well intrusion.
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 tabular-nums">

@@ -344,8 +344,20 @@ export function InventoryDrawer({
                             <ItemIcon className="w-3.5 h-3.5" style={{ color: item.color }} />
                           </div>
                           <div className="min-w-0">
-                            <div className="text-xs font-medium text-white truncate">
-                              {item.name}
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className="text-xs font-medium text-white truncate">
+                                {item.name}
+                              </span>
+                              {count > 0 && (item.id === 'queen_bed' || item.id === 'king_bed' || item.id === 'dining_table') && (
+                                <span className="shrink-0 px-1 py-0.2 rounded text-[9px] font-mono font-medium bg-[#0066FF]/20 text-[#38BDF8] border border-[#0066FF]/30">
+                                  Wall-Edge Stowed
+                                </span>
+                              )}
+                              {count > 0 && (item.id === 'sofa_3seat' || item.id === 'loveseat') && (
+                                <span className="shrink-0 px-1 py-0.2 rounded text-[9px] font-mono font-medium bg-[#10B981]/20 text-[#34D399] border border-[#10B981]/30">
+                                  Oriented Vertical
+                                </span>
+                              )}
                             </div>
                             <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 tabular-nums font-mono">
                               <span className="text-[#0066FF] font-medium">{item.volumeCuFt} cu ft</span>
