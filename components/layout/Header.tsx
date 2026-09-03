@@ -3,7 +3,7 @@
 import React from 'react';
 import { TRUCKS, TRUCK_ORDER, TruckId } from '@/lib/constants/trucks';
 import { PRESETS, PresetId } from '@/lib/constants/presets';
-import { Truck, RotateCcw, FileText } from 'lucide-react';
+import { Truck, RotateCcw, FileText, Menu } from 'lucide-react';
 
 interface HeaderProps {
   selectedTruckId: TruckId;
@@ -14,6 +14,7 @@ interface HeaderProps {
   onToggleUnitSystem: () => void;
   onReset: () => void;
   onOpenManifest?: () => void;
+  onOpenNav?: () => void;
 }
 
 export function Header({
@@ -25,6 +26,7 @@ export function Header({
   onToggleUnitSystem,
   onReset,
   onOpenManifest,
+  onOpenNav,
 }: HeaderProps) {
   return (
     <header className="h-14 border-b border-[#1F242F] bg-[#111318] px-4 flex items-center justify-between shrink-0 z-30 select-none">
@@ -124,6 +126,19 @@ export function Header({
           <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
           <span className="hidden md:inline">Reset</span>
         </button>
+
+        {/* Site Directory / Slide-Over Navigation Trigger */}
+        {onOpenNav && (
+          <button
+            type="button"
+            onClick={onOpenNav}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-medium text-zinc-300 hover:text-white transition-colors"
+            title="Open Site Directory & Sizing Guides"
+          >
+            <Menu className="w-3.5 h-3.5 text-[#0066FF]" strokeWidth={1.5} />
+            <span className="hidden sm:inline">Directory</span>
+          </button>
+        )}
       </div>
     </header>
   );

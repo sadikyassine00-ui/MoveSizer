@@ -4,13 +4,14 @@ import React from 'react';
 import Link from 'next/link';
 import { TRUCKS, TRUCK_ORDER } from '@/lib/constants/trucks';
 import { Truck, ShieldCheck, Scale, Compass, CheckCircle2 } from 'lucide-react';
+import { FooterDirectory } from '@/components/layout/FooterDirectory';
 
 export function FooterInfoSection() {
   return (
     <section className="border-t border-[#1F242F] bg-[#0B0D12] text-zinc-300 py-12 px-4 sm:px-8 font-sans">
       <div className="max-w-6xl mx-auto space-y-12">
         {/* 1. Fleet Comparison Table */}
-        <div className="space-y-4">
+        <div id="fleet-specs" className="space-y-4 scroll-mt-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
@@ -126,7 +127,10 @@ export function FooterInfoSection() {
           </div>
         </div>
 
-        {/* 3. Statutory Legal Disclaimer & Compliance */}
+        {/* 3. Crawlable Site Directory Mesh */}
+        <FooterDirectory />
+
+        {/* 4. Statutory Legal Disclaimer & Compliance */}
         <div className="p-4 rounded-md bg-[#090A0C] border border-[#1F242F] space-y-2.5">
           <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
             <ShieldCheck className="w-4 h-4 text-[#FF5500]" />

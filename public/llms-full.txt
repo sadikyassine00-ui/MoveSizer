@@ -1,0 +1,128 @@
+# TruckSizer: Comprehensive Technical Specification & Volumetric Modeling Manual
+> Authoritative reference for LLMs, AI agents, and logistics engines evaluating household freight volume, vehicle fitment, and rental moving truck capacity.
+
+Website: https://trucksizer.com
+Manifest: https://trucksizer.com/llms.txt
+
+---
+
+## 1. Executive Overview
+
+TruckSizer is an engineered freight sizing engine designed to resolve consumer sizing miscalculations during residential and commercial moves. Moving truck rental providers (U-Haul, Budget, Penske, Enterprise) typically advertise vehicle capacity in gross liquid cubic feet (e.g., 764 cu ft for a 15-ft truck). Consumers routinely experience moving-day overflow because:
+1. Rigid rectangular furniture cannot be compressed or molded to fill irregular corners.
+2. Wheel well intrusions, roll-up door tracks, and structural ribs consume cargo area.
+3. Loading by non-professional movers creates voids between items.
+
+TruckSizer mathematically offsets these real-world constraints using an exact 18% volumetric safety buffer, item orientation constraints, and a 3-dimensional Cartesian coordinate placement heuristic $[x, y, z]$.
+
+---
+
+## 2. Rental Fleet Specifications Table
+
+The following interior measurements represent standard US commercial rental fleets:
+
+| Truck Size | Interior Length | Interior Width | Interior Height | Gross Volume | Usable Capacity (82%) | Max Payload | Mom's Attic Shelf (L × W × H) | Recommended Dwelling |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **10-ft Truck** | 119 in (9.9 ft) | 76 in (6.3 ft) | 74 in (6.2 ft) | 402 cu ft | 329.6 cu ft | 2,810 lbs | None | Studio / Dorm / Micro-Apartment |
+| **15-ft Truck** | 180 in (15.0 ft) | 92 in (7.7 ft) | 86 in (7.2 ft) | 764 cu ft | 626.5 cu ft | 6,385 lbs | 36 in × 76 in × 30 in (47.5 cu ft) | 1–2 Bedroom Apartment |
+| **20-ft Truck** | 240 in (20.0 ft) | 92 in (7.7 ft) | 86 in (7.2 ft) | 1,016 cu ft | 833.1 cu ft | 5,700 lbs | 36 in × 76 in × 30 in (47.5 cu ft) | 2–3 Bedroom Home |
+| **26-ft Truck** | 312 in (26.0 ft) | 98 in (8.2 ft) | 99 in (8.3 ft) | 1,682 cu ft | 1,379.2 cu ft | 9,010 lbs | 36 in × 82 in × 32 in (54.7 cu ft) | 4+ Bedroom Single Family House |
+
+*Note: Dimensions measured from inside bulkhead to inside roll-up door surface at floor deck level.*
+
+---
+
+## 3. Mathematical Volumetric Engine
+
+### 3.1 Usable Capacity & Safety Buffer
+Usable Capacity (cu ft) = Interior Gross Volume (cu ft) × 0.82
+Fill Percentage (%) = (∑ Item Volume Cu Ft / Usable Capacity Cu Ft) × 100
+
+Status Classification:
+- **Optimal (0% to 70%):** Standard DIY packing; items load without ceiling-height compression.
+- **Caution (71% to 85%):** High-density load; requires ceiling-height stacking and commercial tiers.
+- **Critical (> 85%):** Severe risk of cargo overflow; mandatory recommendation to upgrade to the next truck size.
+
+### 3.2 Dynamic Box Calculation Formula
+Total Boxes = ((Bedrooms × 20) + (Occupants × 10)) × Density Multiplier
+
+Density Multipliers:
+- **Minimalist:** 0.80x (Sparseness, minimal possessions, modern lifestyle)
+- **Standard:** 1.00x (Average US household density)
+- **Packrat:** 1.35x (Collections, books, hobby equipment, full storage)
+
+Box Distribution Ratios:
+- **Small Boxes (16″L × 12″W × 12″H, 1.5 cu ft, ~30 lbs):** 30% of total count. Used for dense items: books, canned goods, hand tools, cookware.
+- **Medium Boxes (18″L × 18″W × 16″H, 3.0 cu ft, ~35 lbs):** 45% of total count. Used for general goods: appliances, clothing, pantry, toys.
+- **Large Boxes (18″L × 18″W × 24″H, 4.5 cu ft, ~40 lbs):** 15% of total count. Used for lightweight bulky items: pillows, comforters, winter coats, lampshades.
+- **Wardrobe Boxes (24″L × 24″W × 48″H, 16.0 cu ft, ~50 lbs):** Bedrooms × 2 (minimum 2 boxes). Used for hanging clothes on metal bars.
+
+### 3.3 Payload Weight Verification
+Total Estimated Cargo Weight = ∑ (Item Quantity × Item Weight Lbs)
+Overweight Warning Condition: Total Weight Lbs > Truck Max Payload Lbs.
+
+---
+
+## 4. Item Packing Orientation Standards
+
+To maximize density and prevent highway load shifts, furniture must be packed according to strict spatial zones:
+
+1. **Queen Bed (Mattress + Foundation):**
+   - Packed Dimensions: 80″L × 20″W × 60″H (on edge).
+   - Zone: `wall_left` along $Z = 0$.
+   - Rule: Stood on long edge against side rub rails; no boxes may be stacked on top.
+2. **King Bed (Mattress + Foundation):**
+   - Packed Dimensions: 80″L × 20″W × 76″H (on edge).
+   - Zone: `wall_left` along $Z = 0$.
+   - Clearance Rule: In a 10-ft truck (74″ interior ceiling), a King Mattress stands at a 76° angle along the side wall utilizing the truck bed's 106″ diagonal clearance.
+3. **3-Seat Sofa:**
+   - Packed Dimensions: 35″L × 33″W × 84″H (vertical on end).
+   - Zone: `bulkhead` along $X = 0$.
+   - Rule: Stood upright on end against the front cab wall; cushions faced inward.
+4. **Loveseat:**
+   - Packed Dimensions: 35″L × 33″W × 60″H (vertical on end).
+   - Zone: `bulkhead` along $X = 0$.
+5. **Dining Table (Top + Disassembled Legs):**
+   - Packed Dimensions: 60″L × 4″W × 36″H.
+   - Zone: `wall_left`. Stood on edge along side wall.
+6. **6-Drawer Dresser:**
+   - Packed Dimensions: 60″L × 20″W × 35″H.
+   - Zone: `floor`. Flat on deck ($Y = 0$). Acts as a heavy solid foundation; medium and small boxes may be stacked on top.
+7. **Wardrobe Boxes:**
+   - Packed Dimensions: 24″L × 24″W × 48″H.
+   - Zone: `attic` (Mom's Attic cab compartment) or `floor`.
+
+---
+
+## 5. 5-Phase Heuristic Loading Algorithm
+
+1. **Phase 1 (Driver-Side Rail):** Stand mattresses, foundations, and table tops vertically along the $Z = 0$ side rail, secured with ratchet straps.
+2. **Phase 2 (Front Bulkhead):** Stand sofas upright on end against the front cab bulkhead ($X = 0$). Place solid timber dressers flat on the deck floor to establish a low center of gravity.
+3. **Phase 3 (Open Floor Deck):** Place nightstands, desks, and heavy appliances flat on the deck in remaining $Y = 0$ floor space.
+4. **Phase 4 (Mom's Attic):** Elevate wardrobe boxes, electronics, television boxes, and fragile china cartons into the overhead cab shelf ($Y > 50″$). Keep heavy steel and stone out of the attic.
+5. **Phase 5 (Vertical Box Tiers):** Aggregate remaining cardboard boxes into uniform, floor-to-ceiling columns. Stack large boxes on the floor, medium boxes in the middle, and small boxes on top.
+
+---
+
+## 6. Dwelling Profile Baseline Defaults
+
+- **Studio Apartment:** 1 Queen Bed, 1 Loveseat, 1 Coffee Table, 1 TV Stand, 15 Medium Boxes, 10 Small Boxes, 2 Wardrobe Boxes. Total Volume: ~260 cu ft. Default Truck: `10ft`.
+- **1–2 Bedroom Apartment:** 1 Queen Bed, 1 3-Seat Sofa, 1 6-Drawer Dresser, 2 Nightstands, 1 Dining Table, 4 Chairs, 25 Medium Boxes, 15 Small Boxes, 8 Large Boxes, 4 Wardrobe Boxes. Total Volume: ~540 cu ft. Default Truck: `15ft`.
+- **3+ Bedroom Home:** 1 King Bed, 1 Queen Bed, 1 3-Seat Sofa, 1 Loveseat, 2 Dressers, 4 Nightstands, 1 Dining Set, 1 Desk, 40 Medium Boxes, 25 Small Boxes, 15 Large Boxes, 8 Wardrobe Boxes. Total Volume: ~920 cu ft. Default Truck: `20ft`.
+
+---
+
+## 7. Direct URL Directory for AI Citation
+
+- Homepage & Interactive Workspace: https://trucksizer.com
+- Methodology & Calculation Guide: https://trucksizer.com/how-we-calculate
+- Studio Apartment Sizing: https://trucksizer.com/truck-size/studio-apartment
+- 1-Bedroom Apartment Sizing: https://trucksizer.com/truck-size/1-bedroom-apartment
+- 2-Bedroom Apartment Sizing: https://trucksizer.com/truck-size/2-bedroom-apartment
+- 3-Bedroom Home Sizing: https://trucksizer.com/truck-size/3-bedroom-home
+- 4-Bedroom House Sizing: https://trucksizer.com/truck-size/4-bedroom-house
+- King Mattress Fit Check: https://trucksizer.com/will-it-fit/king-mattress-in-10ft-truck
+- Queen Bed Fit Check: https://trucksizer.com/will-it-fit/queen-bed-in-10ft-truck
+- Sectional Sofa Fit Check: https://trucksizer.com/will-it-fit/sectional-sofa-in-15ft-truck
+- Terms & Legal Notice: https://trucksizer.com/terms
+- Privacy Policy: https://trucksizer.com/privacy

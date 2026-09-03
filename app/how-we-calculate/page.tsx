@@ -2,15 +2,57 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, Calculator, ShieldCheck, Layers, Truck } from 'lucide-react';
 
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://trucksizer.com';
+
 export const metadata: Metadata = {
   title: 'How We Calculate Moving Truck Volume & Fit | TruckSizer',
   description:
     'Engineering methodology behind TruckSizer volumetric calculations, box density multipliers, and 18% real-world packing inefficiency buffers.',
+  alternates: {
+    canonical: `${baseUrl}/how-we-calculate`,
+  },
+  openGraph: {
+    title: 'How We Calculate Moving Truck Volume & Fit | TruckSizer',
+    description:
+      'Engineering methodology behind TruckSizer volumetric calculations, box density multipliers, and 18% real-world packing inefficiency buffers.',
+    url: `${baseUrl}/how-we-calculate`,
+    type: 'article',
+    siteName: 'TruckSizer',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'How We Calculate Moving Truck Volume & Fit | TruckSizer',
+    description:
+      'Engineering methodology behind TruckSizer volumetric calculations and 18% packing inefficiency safety buffers.',
+  },
+};
+
+const breadcrumbsJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: baseUrl,
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'Calculation Methodology',
+      item: `${baseUrl}/how-we-calculate`,
+    },
+  ],
 };
 
 export default function HowWeCalculatePage() {
   return (
     <div className="min-h-screen bg-[#090A0C] text-[#F8F9FA] flex flex-col font-sans">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbsJsonLd) }}
+      />
       <header className="h-14 border-b border-[#1F242F] bg-[#111318] px-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 text-white font-semibold text-base hover:opacity-90">
           <ArrowLeft className="w-4 h-4 text-zinc-400" />
@@ -18,7 +60,7 @@ export default function HowWeCalculatePage() {
         </Link>
         <Link
           href="/"
-          className="px-3 py-1.5 rounded-lg bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-semibold transition-colors"
+          className="px-3 py-1.5 rounded-md bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-semibold transition-colors"
         >
           Open Visualizer
         </Link>

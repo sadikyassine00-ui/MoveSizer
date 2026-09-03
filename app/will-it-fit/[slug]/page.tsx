@@ -5,6 +5,7 @@ import { TRUCKS, TruckId } from '@/lib/constants/trucks';
 import { ITEMS, ItemDefinition } from '@/lib/constants/items';
 import { packTruck } from '@/lib/engine/packEngine';
 import { TruckCanvas } from '@/components/visualizer/TruckCanvas';
+import { FooterDirectory } from '@/components/layout/FooterDirectory';
 import { CheckCircle2, XCircle, ArrowRight, Truck, ArrowLeft } from 'lucide-react';
 
 interface Props {
@@ -80,16 +81,33 @@ function parseSlug(slug: string): FitAnalysis | null {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const analysis = parseSlug(slug);
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://trucksizer.com';
 
   if (!analysis) {
     return { title: 'Will It Fit? | TruckSizer' };
   }
 
+  const title = `Will a ${analysis.item.name} Fit in a ${TRUCKS[analysis.truckId].name}? (Visual Check)`;
+  const description = analysis.explanation;
+  const canonicalUrl = `${baseUrl}/will-it-fit/${slug}`;
+
   return {
-    title: `Will a ${analysis.item.name} Fit in a ${TRUCKS[analysis.truckId].name}? (Visual Check)`,
-    description: analysis.explanation,
+    title,
+    description,
     alternates: {
-      canonical: `/will-it-fit/${slug}`,
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      type: 'article',
+      siteName: 'TruckSizer',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
     },
   };
 }
@@ -101,19 +119,20 @@ export async function generateStaticParams() {
 export default async function WillItFitPage({ params }: Props) {
   const { slug } = await params;
   const analysis = parseSlug(slug);
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://trucksizer.com';
 
   if (!analysis) {
     notFound();
   }
 
-  const { item, truckId, fits, verdict, explanation } = analysis;
+  const { item, truckId, fits, verdict, explanation, orientationText } = analysis;
   const truck = TRUCKS[truckId];
 
   // Pack the single item into the truck for visualizer
   const inventory: Record<string, number> = { [item.id]: 1 };
   const packResult = packTruck(truck, inventory, []);
 
-  const jsonLd = {
+  const faqJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
     mainEntity: [
@@ -125,6 +144,47 @@ export default async function WillItFitPage({ params }: Props) {
           text: verdict,
         },
       },
+      {
+        '@type': 'Question',
+        name: `How should a ${item.name} be loaded into a ${truck.name}?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `Professional commercial movers recommend loading the ${item.name} ${orientationText}. Always secure with heavy-duty ratchet tie-down straps against side wall rails or the front bulkhead.`,
+        },
+      },
+      {
+        '@type': 'Question',
+        name: `What are the interior dimensions of a ${truck.name}?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `A ${truck.name} features interior dimensions of ${truck.length}″ length × ${truck.width}″ width × ${truck.height}″ height, offering ${truck.volumeCuFt} gross cubic feet (${Math.round(truck.volumeCuFt * 0.82)} cu ft usable volume with 18% safety buffer) and up to ${truck.maxPayloadLbs.toLocaleString()} lbs payload capacity.`,
+        },
+      },
+    ],
+  };
+
+  const breadcrumbsJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: baseUrl,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Will It Fit?',
+        item: `${baseUrl}/will-it-fit/${slug}`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: `${item.name} in ${truck.name}`,
+        item: `${baseUrl}/will-it-fit/${slug}`,
+      },
     ],
   };
 
@@ -132,7 +192,11 @@ export default async function WillItFitPage({ params }: Props) {
     <div className="min-h-screen bg-[#090A0C] text-[#F8F9FA] flex flex-col font-sans">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbsJsonLd) }}
       />
 
       {/* Header */}
@@ -271,6 +335,9 @@ export default async function WillItFitPage({ params }: Props) {
             Launch Sizing Workspace
           </Link>
         </div>
+
+        {/* Crawlable Internal Link Directory */}
+        <FooterDirectory />
       </main>
     </div>
   );

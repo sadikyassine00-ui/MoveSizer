@@ -27,7 +27,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     {
       url: `${baseUrl}/how-we-calculate`,
       lastModified: new Date(),
-      changeFrequency: 'monthly',
+      changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
@@ -48,7 +48,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     (dwelling) => ({
       url: `${baseUrl}/truck-size/${dwelling}`,
       lastModified: new Date(),
-      changeFrequency: 'monthly',
+      changeFrequency: 'weekly',
       priority: 0.8,
     })
   );
@@ -56,7 +56,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const fitPages: MetadataRoute.Sitemap = KNOWN_FIT_SLUGS.map((slug) => ({
     url: `${baseUrl}/will-it-fit/${slug}`,
     lastModified: new Date(),
-    changeFrequency: 'monthly',
+    changeFrequency: 'weekly',
     priority: 0.8,
   }));
 

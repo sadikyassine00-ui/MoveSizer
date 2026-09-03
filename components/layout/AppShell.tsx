@@ -13,6 +13,7 @@ import { InventoryDrawer } from '@/components/ui/InventoryDrawer';
 import { ConversionCard } from '@/components/ui/ConversionCard';
 import { LoadManifestModal } from '@/components/ui/LoadManifestModal';
 import { FooterInfoSection } from '@/components/layout/FooterInfoSection';
+import { NavDrawer } from '@/components/layout/NavDrawer';
 import { trackPresetSelected } from '@/lib/analytics/events';
 import { Layers, FileText, ChevronUp, ChevronDown } from 'lucide-react';
 
@@ -56,6 +57,9 @@ export function AppShell({
   // Mobile Bottom Sheet state
   const [mobileTab, setMobileTab] = useState<'inventory' | 'quote'>('inventory');
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(true);
+
+  // Site Directory Slide-Over Navigation Drawer state
+  const [isNavDrawerOpen, setIsNavDrawerOpen] = useState(false);
 
   // Load Manifest Modal state
   const [isManifestOpen, setIsManifestOpen] = useState(false);
@@ -194,6 +198,7 @@ export function AppShell({
         }
         onReset={handleReset}
         onOpenManifest={() => setIsManifestOpen(true)}
+        onOpenNav={() => setIsNavDrawerOpen(true)}
       />
 
       {/* 2. Main Responsive Viewport */}
@@ -409,6 +414,12 @@ export function AppShell({
         originZip={manifestData.originZip}
         destinationZip={manifestData.destinationZip}
         moveDate={manifestData.moveDate}
+      />
+
+      {/* 5. Slide-Over Site Directory & Guides Drawer */}
+      <NavDrawer
+        isOpen={isNavDrawerOpen}
+        onClose={() => setIsNavDrawerOpen(false)}
       />
     </div>
   );

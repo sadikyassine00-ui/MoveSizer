@@ -2,9 +2,21 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, Shield } from 'lucide-react';
 
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://trucksizer.com';
+
 export const metadata: Metadata = {
   title: 'Privacy Policy | TruckSizer',
   description: 'Privacy Policy and CPL lead data handling standards for TruckSizer users.',
+  alternates: {
+    canonical: `${baseUrl}/privacy`,
+  },
+  openGraph: {
+    title: 'Privacy Policy | TruckSizer',
+    description: 'Privacy Policy and CPL lead data handling standards for TruckSizer users.',
+    url: `${baseUrl}/privacy`,
+    type: 'website',
+    siteName: 'TruckSizer',
+  },
 };
 
 export default function PrivacyPage() {

@@ -2,9 +2,21 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, FileCheck } from 'lucide-react';
 
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://trucksizer.com';
+
 export const metadata: Metadata = {
   title: 'Terms of Service | TruckSizer',
   description: 'Terms and Conditions for using the TruckSizer volumetric moving calculator.',
+  alternates: {
+    canonical: `${baseUrl}/terms`,
+  },
+  openGraph: {
+    title: 'Terms of Service | TruckSizer',
+    description: 'Terms and Conditions for using the TruckSizer volumetric moving calculator.',
+    url: `${baseUrl}/terms`,
+    type: 'website',
+    siteName: 'TruckSizer',
+  },
 };
 
 export default function TermsPage() {
