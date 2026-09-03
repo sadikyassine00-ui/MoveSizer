@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
+import StructuredData from '@/components/seo/StructuredData';
 import './globals.css';
 
 const inter = Inter({
@@ -75,31 +76,6 @@ export const metadata: Metadata = {
   },
 };
 
-const rootJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebApplication',
-  name: 'TruckSizer',
-  url: siteUrl,
-  applicationCategory: 'UtilitiesApplication',
-  operatingSystem: 'Web',
-  browserRequirements: 'Requires JavaScript and HTML5 Canvas support.',
-  offers: {
-    '@type': 'Offer',
-    price: '0.00',
-    priceCurrency: 'USD',
-  },
-  featureList: [
-    '2.5D isometric cutaway moving truck visualizer',
-    '18% real-world packing inefficiency buffer modeling',
-    'Dynamic household box count estimation',
-    'US rental truck specs (10ft, 15ft, 20ft, 26ft)',
-    'Heuristic 3D Cartesian item packing engine',
-    'Printable certified load manifest PDF export',
-  ],
-  description:
-    'High-performance 2.5D visual load planner and volumetric sizing calculator for commercial moving trucks.',
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -108,10 +84,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`dark ${inter.variable}`} suppressHydrationWarning>
       <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(rootJsonLd) }}
-        />
+        <StructuredData />
       </head>
       <body className="min-h-screen bg-[#090A0C] text-[#F8F9FA] font-sans antialiased selection:bg-[#FF5500] selection:text-white">
         {process.env.NEXT_PUBLIC_GA_ID && (
