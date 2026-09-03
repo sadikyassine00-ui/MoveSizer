@@ -17,6 +17,7 @@ import {
   Mail,
   Loader2,
 } from 'lucide-react';
+import { trackQuoteFormSubmitted } from '@/lib/analytics/events';
 
 interface ConversionCardProps {
   truck: TruckSpec;
@@ -119,6 +120,14 @@ export function ConversionCard({
         leadId: data.leadId,
         priceRange: data.priceRange,
       });
+
+      trackQuoteFormSubmitted(
+        data.leadId,
+        truck.id,
+        capacityResult.totalVolumeCuFt,
+        originZip.trim(),
+        destinationZip.trim()
+      );
     } catch (err: unknown) {
       setErrors({
         form: err instanceof Error ? err.message : 'Submission failed. Please try again.',

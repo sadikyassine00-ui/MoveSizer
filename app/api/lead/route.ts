@@ -9,6 +9,8 @@ export interface LeadPayload {
   truckSize: string;
   safetyBuffer: number;
   inventorySummary?: Record<string, number>;
+  subid?: string;
+  clickId?: string;
 }
 
 const ZIP_REGEX = /^\d{5}$/;
@@ -27,6 +29,8 @@ export async function POST(request: Request) {
       truckSize,
       safetyBuffer,
       inventorySummary,
+      subid,
+      clickId,
     } = body;
 
     // Strict validation
@@ -75,11 +79,52 @@ export async function POST(request: Request) {
     };
 
     const truckTier = baseRates[truckSize || '15ft'] || baseRates['15ft'];
+    
+    // Generate unique click/lead UUID upon submission (Task 13)
+    const leadUuid = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `uuid-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const leadId = `TS-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`;
+
+    // Read affiliate click IDs from cookies or body
+    const cookieHeader = request.headers.get('cookie') || '';
+    const cookieSubId = cookieHeader.match(/subid=([^;]+)/)?.[1] || subid || null;
+    const cookieClickId = cookieHeader.match(/click_id=([^;]+)/)?.[1] || clickId || null;
+
+    // Server-Side Postback Handler (Task 13)
+    const brokerEndpoint = process.env.LEAD_BROKER_API_ENDPOINT;
+    const brokerApiKey = process.env.LEAD_BROKER_API_KEY;
+
+    if (brokerEndpoint) {
+      try {
+        await fetch(brokerEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(brokerApiKey ? { Authorization: `Bearer ${brokerApiKey}` } : {}),
+          },
+          body: JSON.stringify({
+            lead_uuid: leadUuid,
+            subid: cookieSubId,
+            click_id: cookieClickId,
+            origin_zip: originZip,
+            destination_zip: destinationZip,
+            move_date: moveDate,
+            email,
+            cu_ft: cuFt,
+            truck_size: truckSize,
+            safety_buffer: safetyBuffer || 18,
+          }),
+        });
+      } catch (postbackErr) {
+        console.error('[AFFILIATE POSTBACK FAILED]', postbackErr);
+      }
+    }
 
     const responseData = {
       success: true,
       leadId,
+      leadUuid,
       truckSize: truckSize || '15ft',
       cuFt: cuFt || 0,
       priceRange: {
@@ -93,7 +138,7 @@ export async function POST(request: Request) {
       timestamp: new Date().toISOString(),
     };
 
-    console.log('[LEAD INGESTED]', { leadId, email, truckSize, originZip, destinationZip });
+    console.log('[LEAD INGESTED]', { leadId, leadUuid, email, truckSize, originZip, destinationZip });
 
     return NextResponse.json(responseData, { status: 200 });
   } catch (err: unknown) {

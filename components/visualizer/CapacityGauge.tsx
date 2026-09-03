@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { CapacityCalculationResult } from '@/lib/engine/capacityEngine';
 import { TruckId } from '@/lib/constants/trucks';
 import { ShieldCheck, AlertTriangle, ArrowUpRight, Scale, CheckCircle2 } from 'lucide-react';
+import { trackCapacityThresholdCrossed, trackSizeUpClicked } from '@/lib/analytics/events';
 
 interface CapacityGaugeProps {
   capacityResult: CapacityCalculationResult;
@@ -28,6 +29,15 @@ export function CapacityGauge({
     nextTruck,
     needsUpgrade,
   } = capacityResult;
+
+  const prevStatusRef = useRef(status);
+
+  useEffect(() => {
+    if (status !== 'optimal' && status !== prevStatusRef.current) {
+      trackCapacityThresholdCrossed(status, fillPercentage, capacityResult.truck.id);
+    }
+    prevStatusRef.current = status;
+  }, [status, fillPercentage, capacityResult.truck.id]);
 
   const statusConfig = {
     optimal: {
@@ -140,7 +150,10 @@ export function CapacityGauge({
 
           <button
             type="button"
-            onClick={() => onUpgradeTruck(nextTruck.id)}
+            onClick={() => {
+              trackSizeUpClicked(capacityResult.truck.id, nextTruck.id, fillPercentage);
+              onUpgradeTruck(nextTruck.id);
+            }}
             className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-semibold tracking-tight transition-colors shadow-md shadow-[#FF5500]/20"
           >
             <span>Upgrade to {nextTruck.id}</span>

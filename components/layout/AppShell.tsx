@@ -12,6 +12,8 @@ import { CapacityGauge } from '@/components/visualizer/CapacityGauge';
 import { InventoryDrawer } from '@/components/ui/InventoryDrawer';
 import { ConversionCard } from '@/components/ui/ConversionCard';
 import { LoadManifestModal } from '@/components/ui/LoadManifestModal';
+import { FooterInfoSection } from '@/components/layout/FooterInfoSection';
+import { trackPresetSelected } from '@/lib/analytics/events';
 import { Layers, FileText, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface AppShellProps {
@@ -95,6 +97,7 @@ export function AppShell({
 
       setInventory(newInventory);
       setSelectedBlock(null);
+      trackPresetSelected(presetId, preset.defaultTruck);
     },
     [density]
   );
@@ -178,7 +181,7 @@ export function AppShell({
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#090A0C] text-[#F8F9FA] overflow-hidden font-sans">
+    <div className="flex flex-col min-h-screen w-screen bg-[#090A0C] text-[#F8F9FA] overflow-x-hidden font-sans">
       {/* 1. Global Micro-Header */}
       <Header
         selectedTruckId={selectedTruckId}
@@ -197,7 +200,7 @@ export function AppShell({
       {/* ================================================================= */}
       {/* DESKTOP VIEWPORT (≥ 1024px): Non-scrolling 3-Column Layout        */}
       {/* ================================================================= */}
-      <div className="hidden lg:flex flex-1 overflow-hidden">
+      <div className="hidden lg:flex h-[calc(100vh-3.5rem)] min-h-[600px] shrink-0 overflow-hidden">
         {/* Left Column (320px): Inventory Drawer */}
         <div className="w-[320px] shrink-0 h-full overflow-hidden shadow-2xl z-10">
           <InventoryDrawer
@@ -263,7 +266,7 @@ export function AppShell({
       {/* ================================================================= */}
       {/* MOBILE VIEWPORT (< 1024px): Sticky Canvas + Bottom Sheet          */}
       {/* ================================================================= */}
-      <div className="flex lg:hidden flex-col flex-1 overflow-hidden relative">
+      <div className="flex lg:hidden flex-col h-[calc(100vh-3.5rem)] min-h-[580px] shrink-0 overflow-hidden relative">
         {/* Top 45%: Sticky 2.5D Canvas */}
         <div className="h-[45%] w-full bg-[#090A0C] relative shrink-0 border-b border-[#1F242F]">
           <TruckCanvas
@@ -391,7 +394,10 @@ export function AppShell({
         </div>
       </div>
 
-      {/* 3. Load Manifest Modal */}
+      {/* 3. Below-Canvas Informational Section & Compliance */}
+      <FooterInfoSection />
+
+      {/* 4. Load Manifest Modal */}
       <LoadManifestModal
         isOpen={isManifestOpen}
         onClose={() => setIsManifestOpen(false)}

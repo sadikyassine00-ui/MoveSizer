@@ -149,5 +149,54 @@ describe('Calculation and Packing Engines', () => {
       const atticBlocks = bedPack.blocks.filter((b) => b.isAttic);
       expect(atticBlocks.length).toBeGreaterThan(0);
     });
+
+    it('correctly packs and bounds-checks custom items', () => {
+      const truck15ft = TRUCKS['15ft'];
+      const customItems = [
+        {
+          id: 'custom_piano',
+          name: 'Upright Piano',
+          length: 58,
+          width: 24,
+          height: 48,
+          quantity: 1,
+          color: '#8B5CF6',
+          category: 'custom' as const,
+        },
+      ];
+
+      const result = packTruck(truck15ft, {}, customItems);
+      const pianoBlock = result.blocks.find((b) => b.itemId === 'custom_piano');
+      expect(pianoBlock).toBeDefined();
+      expect(pianoBlock?.length).toBe(58);
+      expect(pianoBlock?.width).toBe(24);
+      expect(pianoBlock?.height).toBe(48);
+      expect(pianoBlock?.y).toBe(0); // Floor deck
+      expect(pianoBlock!.y + pianoBlock!.height).toBeLessThanOrEqual(truck15ft.height);
+    });
+
+    it('handles zero inventory gracefully without errors', () => {
+      const truck10ft = TRUCKS['10ft'];
+      const result = packTruck(truck10ft, {}, []);
+      expect(result.blocks.length).toBe(0);
+      expect(result.unpackedItems.length).toBe(0);
+
+      const cap = calculateCapacity(truck10ft, {});
+      expect(cap.fillPercentage).toBe(0);
+      expect(cap.status).toBe('optimal');
+      expect(cap.totalVolumeCuFt).toBe(0);
+      expect(cap.totalWeightLbs).toBe(0);
+    });
+
+    it('flags unpacked items when cargo dramatically exceeds vehicle capacity', () => {
+      const truck10ft = TRUCKS['10ft']; // 402 gross cu ft
+      // Load 40 large dressers into a tiny 10ft truck
+      const massiveInventory = {
+        dresser_6drawer: 40,
+      };
+
+      const result = packTruck(truck10ft, massiveInventory, []);
+      expect(result.unpackedItems.length).toBeGreaterThan(0);
+    });
   });
 });
