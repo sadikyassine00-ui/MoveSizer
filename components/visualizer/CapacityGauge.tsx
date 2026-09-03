@@ -65,7 +65,9 @@ export function CapacityGauge({
       {/* Top Header Row: Fill % and Monospace Cu Ft Readout */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold ${statusConfig.badgeBg} ${statusConfig.textColor} border ${statusConfig.borderColor}`}>
+          <span
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold ${statusConfig.badgeBg} ${statusConfig.textColor} border ${statusConfig.borderColor} tracking-wider`}
+          >
             <StatusIcon className="w-3.5 h-3.5" />
             {statusConfig.label}
           </span>
@@ -74,8 +76,8 @@ export function CapacityGauge({
           </span>
         </div>
 
-        <div className="font-mono text-sm font-bold text-white tracking-wide">
-          <span className={statusConfig.textColor}>{fillPercentage}% Full</span>
+        <div className="font-mono text-sm font-semibold text-white tracking-wide">
+          <span className={`${statusConfig.textColor} font-bold`}>{fillPercentage}% Full</span>
           <span className="text-gray-400 font-normal ml-2">
             ({totalVolumeCuFt} / {usableCapacityCuFt} cu ft)
           </span>
@@ -114,7 +116,7 @@ export function CapacityGauge({
           <Scale className={`w-4 h-4 ${isOverweight ? 'text-[#EF4444]' : 'text-gray-400'}`} />
           <span className="text-gray-400">
             Est. Cargo Weight:{' '}
-            <span className={isOverweight ? 'text-[#EF4444] font-bold' : 'text-gray-200'}>
+            <span className={isOverweight ? 'text-[#EF4444] font-bold' : 'text-gray-200 font-medium'}>
               {totalWeightLbs.toLocaleString()} lbs
             </span>{' '}
             /{' '}
@@ -136,14 +138,14 @@ export function CapacityGauge({
           <div className="flex items-center gap-2.5">
             <AlertTriangle className="w-5 h-5 text-[#FF5500] shrink-0" />
             <p className="text-xs sm:text-sm text-gray-100 font-medium">
-              Space is tight. Upgrade to <strong className="text-white">{nextTruck.name}</strong> to prevent moving-day overflow.
+              Space is tight. Upgrade to <strong className="text-white font-display text-base uppercase tracking-wider">{nextTruck.name}</strong> to prevent moving-day overflow.
             </p>
           </div>
 
           <button
             type="button"
             onClick={() => onUpgradeTruck(nextTruck.id)}
-            className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 rounded-md bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-mono font-bold tracking-wide transition-colors shadow-lg shadow-[#FF5500]/20"
+            className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 rounded-md bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-mono font-bold tracking-wider uppercase transition-colors shadow-lg shadow-[#FF5500]/20"
           >
             <span>Upgrade to {nextTruck.id}</span>
             <ArrowUpRight className="w-4 h-4" />

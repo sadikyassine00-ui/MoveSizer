@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { TRUCKS, TRUCK_ORDER, TruckId } from '@/lib/constants/trucks';
 import { PRESETS, PresetId } from '@/lib/constants/presets';
 import { calculateBoxRequirements, DensityLevel } from '@/lib/engine/boxCalculator';
@@ -25,33 +25,36 @@ export default function MoveSizerApp() {
   const [selectedBlock, setSelectedBlock] = useState<DrawableBlock | null>(null);
 
   // Handle Preset Selection
-  const handleSelectPreset = useCallback((presetId: PresetId) => {
-    const preset = PRESETS[presetId];
-    if (!preset) return;
+  const handleSelectPreset = useCallback(
+    (presetId: PresetId) => {
+      const preset = PRESETS[presetId];
+      if (!preset) return;
 
-    setSelectedPreset(presetId);
-    setSelectedTruckId(preset.defaultTruck);
-    setBedrooms(preset.bedrooms);
-    setOccupants(preset.occupants);
+      setSelectedPreset(presetId);
+      setSelectedTruckId(preset.defaultTruck);
+      setBedrooms(preset.bedrooms);
+      setOccupants(preset.occupants);
 
-    // Calculate baseline boxes for preset
-    const boxCalc = calculateBoxRequirements({
-      bedrooms: preset.bedrooms,
-      occupants: preset.occupants,
-      density,
-    });
+      // Calculate baseline boxes for preset
+      const boxCalc = calculateBoxRequirements({
+        bedrooms: preset.bedrooms,
+        occupants: preset.occupants,
+        density,
+      });
 
-    const newInventory = {
-      ...preset.items,
-      box_small: boxCalc.counts.small,
-      box_medium: boxCalc.counts.medium,
-      box_large: boxCalc.counts.large,
-      box_wardrobe: boxCalc.counts.wardrobe,
-    };
+      const newInventory = {
+        ...preset.items,
+        box_small: boxCalc.counts.small,
+        box_medium: boxCalc.counts.medium,
+        box_large: boxCalc.counts.large,
+        box_wardrobe: boxCalc.counts.wardrobe,
+      };
 
-    setInventory(newInventory);
-    setSelectedBlock(null);
-  }, [density]);
+      setInventory(newInventory);
+      setSelectedBlock(null);
+    },
+    [density]
+  );
 
   // Handle Room Baseline / Density Changes
   const updateBoxEstimates = useCallback(
@@ -125,18 +128,20 @@ export default function MoveSizerApp() {
   }, [currentTruck, inventory]);
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#090A0C] text-[#F8F9FA] overflow-hidden">
+    <div className="flex flex-col h-screen w-screen bg-[#090A0C] text-[#F8F9FA] overflow-hidden font-sans">
       {/* Micro Global Header */}
       <header className="h-14 border-b border-[#1F242F] bg-[#111318] px-4 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 font-mono font-black text-lg tracking-wider text-white">
-            <div className="p-1 rounded bg-[#FF5500] text-black">
+          <div className="flex items-center gap-2 font-display font-black text-2xl uppercase tracking-wider text-white">
+            <div className="p-1.5 rounded-md bg-[#FF5500] text-black">
               <Truck className="w-4 h-4 text-white" />
             </div>
-            <span>TRUCK<span className="text-[#FF5500]">SIZER</span></span>
+            <span>
+              TRUCK<span className="text-[#FF5500]">SIZER</span>
+            </span>
           </div>
-          <span className="hidden sm:inline-block text-[11px] font-mono text-gray-500 border-l border-[#1F242F] pl-3">
-            2.5D Cargo Volume & Fit Engine
+          <span className="hidden sm:inline-block text-xs font-mono uppercase tracking-wide text-gray-500 border-l border-[#1F242F] pl-3">
+            LOGISTICS FIT SPECIFICATION SYSTEM
           </span>
         </div>
 
@@ -150,7 +155,7 @@ export default function MoveSizerApp() {
                 key={tid}
                 type="button"
                 onClick={() => setSelectedTruckId(tid)}
-                className={`px-3 py-1 rounded-md text-xs font-mono transition-all ${
+                className={`px-3.5 py-1 rounded-md text-xs font-mono font-semibold transition-all ${
                   isSelected
                     ? 'bg-[#0066FF] text-white font-bold shadow-md shadow-[#0066FF]/25'
                     : 'text-gray-400 hover:text-white'
@@ -175,7 +180,7 @@ export default function MoveSizerApp() {
         </div>
       </header>
 
-      {/* Main Workspace: 2-Column layout (Left: Inventory Drawer, Center: Canvas + HUD) */}
+      {/* Main Workspace: 2-Column layout */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Column: Inventory Drawer */}
         <div className="w-80 md:w-96 shrink-0 h-full flex flex-col z-10 shadow-2xl">
@@ -196,7 +201,7 @@ export default function MoveSizerApp() {
           />
         </div>
 
-        {/* Center / Right Area: Canvas Visualizer + Capacity HUD */}
+        {/* Center / Visualizer: Canvas + Capacity HUD */}
         <main className="flex-1 flex flex-col h-full overflow-hidden bg-[#090A0C] relative">
           {/* 2.5D Isometric HTML5 Canvas */}
           <div className="flex-1 relative w-full h-full min-h-[380px]">
@@ -209,19 +214,19 @@ export default function MoveSizerApp() {
 
             {/* Unpacked items warning if capacity exceeded */}
             {packResult.unpackedItems.length > 0 && (
-              <div className="absolute bottom-4 left-4 z-20 max-w-sm p-3 rounded-lg bg-[#EF4444]/15 border border-[#EF4444]/40 backdrop-blur-md text-xs font-mono text-white shadow-lg">
-                <div className="font-bold text-[#EF4444] mb-1 flex items-center gap-1.5">
-                  <span>{packResult.unpackedItems.length} items could not fit in this truck!</span>
+              <div className="absolute bottom-4 left-4 z-20 max-w-sm p-3.5 rounded-lg bg-[#EF4444]/15 border border-[#EF4444]/50 backdrop-blur-md text-xs font-mono text-white shadow-xl">
+                <div className="font-bold text-[#EF4444] mb-1 flex items-center gap-1.5 uppercase tracking-wide">
+                  <span>{packResult.unpackedItems.length} items exceed spatial envelope!</span>
                 </div>
                 <div className="text-[11px] text-gray-300">
-                  Cargo exceeds physical cargo bounds. Upgrade truck size to accommodate remaining load.
+                  Cargo exceeds interior boundaries. Upgrade truck size to accommodate remaining load.
                 </div>
               </div>
             )}
           </div>
 
           {/* Bottom Fixed Capacity Gauge HUD */}
-          <div className="p-4 bg-[#090A0C]/90 backdrop-blur border-t border-[#1F242F] shrink-0 z-10">
+          <div className="p-4 bg-[#090A0C]/95 backdrop-blur border-t border-[#1F242F] shrink-0 z-10">
             <CapacityGauge
               capacityResult={capacityResult}
               onUpgradeTruck={(nextId) => setSelectedTruckId(nextId)}

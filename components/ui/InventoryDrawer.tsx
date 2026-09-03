@@ -26,7 +26,6 @@ import {
   Armchair,
   Briefcase,
   Layers,
-  HelpCircle,
 } from 'lucide-react';
 
 interface InventoryDrawerProps {
@@ -46,14 +45,12 @@ interface InventoryDrawerProps {
   className?: string;
 }
 
-// Icon mapping per item ID
 function getItemIcon(itemId: string) {
   switch (itemId) {
     case 'queen_bed':
     case 'king_bed':
       return BedDouble;
     case 'dresser_6drawer':
-      return Layers;
     case 'nightstand':
       return Layers;
     case 'sofa_3seat':
@@ -95,7 +92,6 @@ export function InventoryDrawer({
   onRemoveCustomItem,
   className = '',
 }: InventoryDrawerProps) {
-  // Accordion toggle states
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     living_room: true,
     bedroom: true,
@@ -104,7 +100,6 @@ export function InventoryDrawer({
     custom: false,
   });
 
-  // Custom item form state
   const [customName, setCustomName] = useState('');
   const [customLength, setCustomLength] = useState<string>('');
   const [customWidth, setCustomWidth] = useState<string>('');
@@ -127,7 +122,7 @@ export function InventoryDrawer({
       return;
     }
     if (isNaN(l) || isNaN(w) || isNaN(h) || l <= 0 || w <= 0 || h <= 0) {
-      setCustomError('Enter valid positive dimensions in inches');
+      setCustomError('Enter valid dimensions in inches');
       return;
     }
 
@@ -151,7 +146,6 @@ export function InventoryDrawer({
     setCustomError(null);
   };
 
-  // Group items by category
   const categories: Array<{ id: ItemCategory; title: string; icon: React.ComponentType<{ className?: string }> }> = [
     { id: 'living_room', title: 'Living Room', icon: Sofa },
     { id: 'bedroom', title: 'Bedrooms', icon: BedDouble },
@@ -164,11 +158,11 @@ export function InventoryDrawer({
       {/* 1. Header & One-Click Preset Selectors */}
       <div className="p-4 border-b border-[#1F242F] space-y-3 shrink-0">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-mono text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+          <span className="text-xs font-mono font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-[#FF5500]" />
-            Quick Presets
+            FLEET INVENTORY PRESETS
           </span>
-          <span className="text-[10px] font-mono text-gray-500">1-Click Load</span>
+          <span className="text-[10px] font-mono text-gray-500">1-CLICK</span>
         </div>
 
         <div className="grid grid-cols-3 gap-2">
@@ -180,28 +174,28 @@ export function InventoryDrawer({
                 key={pid}
                 type="button"
                 onClick={() => onSelectPreset(pid)}
-                className={`flex flex-col items-center justify-center p-2 rounded-lg border text-xs font-mono font-medium transition-all ${
+                className={`flex flex-col items-center justify-center p-2 rounded-lg border text-xs font-mono transition-all ${
                   isActive
                     ? 'bg-[#FF5500]/15 border-[#FF5500] text-white shadow-md shadow-[#FF5500]/10'
                     : 'bg-[#090A0C] border-[#1F242F] text-gray-400 hover:border-gray-600 hover:text-gray-200'
                 }`}
               >
-                <span className="font-bold">{preset.label}</span>
-                <span className="text-[10px] opacity-70 mt-0.5">{preset.defaultTruck}</span>
+                <span className="font-display uppercase text-sm font-bold tracking-wide">{preset.label}</span>
+                <span className="text-[10px] font-mono opacity-70 mt-0.5">{preset.defaultTruck}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* 2. Baseline Room Controls (Bedrooms, Occupants, Density) */}
+      {/* 2. Baseline Room Controls */}
       <div className="p-4 border-b border-[#1F242F] space-y-3 bg-[#0D0F14] shrink-0">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-mono text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+          <span className="text-xs font-mono font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
             <Sliders className="w-3.5 h-3.5 text-[#0066FF]" />
-            Room Baseline & Boxes
+            ROOM BASELINE & BOX DENSITY
           </span>
-          <span className="text-[10px] font-mono text-[#0066FF]">Auto-Estimator</span>
+          <span className="text-[10px] font-mono text-[#0066FF]">AUTO-CALC</span>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -267,17 +261,16 @@ export function InventoryDrawer({
         {/* Density Dropdown */}
         <div className="space-y-1">
           <label className="text-[11px] font-mono text-gray-400 flex items-center justify-between">
-            <span>Living Density</span>
-            <span className="text-[10px] text-gray-500">Affects box counts</span>
+            <span>Packing Density Multiplier</span>
           </label>
           <select
             value={density}
             onChange={(e) => onDensityChange(e.target.value as DensityLevel)}
             className="w-full bg-[#090A0C] border border-[#1F242F] rounded-lg px-2.5 py-1.5 text-xs font-mono text-gray-200 focus:outline-none focus:border-[#0066FF]"
           >
-            <option value="minimalist">Minimalist (0.8x Box Count)</option>
-            <option value="standard">Standard (1.0x Box Count)</option>
-            <option value="packrat">Packrat (1.35x Box Count)</option>
+            <option value="minimalist">Minimalist (0.8x)</option>
+            <option value="standard">Standard (1.0x)</option>
+            <option value="packrat">Packrat (1.35x)</option>
           </select>
         </div>
       </div>
@@ -303,11 +296,11 @@ export function InventoryDrawer({
               >
                 <div className="flex items-center gap-2">
                   <CategoryIcon className="w-4 h-4 text-gray-400" />
-                  <span className="text-xs font-mono font-bold text-gray-200 uppercase tracking-wider">
+                  <span className="text-sm font-display font-bold uppercase tracking-wider text-gray-200">
                     {cat.title}
                   </span>
                   {itemCountInCategory > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-[#1F242F] text-gray-300">
+                    <span className="px-2 py-0.2 rounded-full text-[10px] font-mono bg-[#1F242F] text-[#0066FF] font-bold">
                       {itemCountInCategory}
                     </span>
                   )}
@@ -328,7 +321,7 @@ export function InventoryDrawer({
                     return (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between p-2 rounded-lg bg-[#090A0C] border border-[#1F242F] hover:border-gray-700 transition-colors"
+                        className="flex items-center justify-between p-2.5 rounded-lg bg-[#090A0C] border border-[#1F242F] hover:border-gray-700 transition-colors"
                       >
                         <div className="flex items-center gap-2.5 min-w-0 pr-2">
                           <div
@@ -388,8 +381,8 @@ export function InventoryDrawer({
           >
             <div className="flex items-center gap-2">
               <Maximize2 className="w-4 h-4 text-[#0066FF]" />
-              <span className="text-xs font-mono font-bold text-[#0066FF] uppercase tracking-wider">
-                + Add Custom Item
+              <span className="text-sm font-display font-bold text-[#0066FF] uppercase tracking-wider">
+                + ADD CUSTOM SPEC ITEM
               </span>
               {customItems.length > 0 && (
                 <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-[#0066FF]/20 text-[#0066FF]">
@@ -408,15 +401,15 @@ export function InventoryDrawer({
             <div className="p-3 pt-0 space-y-3">
               <form onSubmit={handleAddCustom} className="space-y-2.5 bg-[#090A0C] p-3 rounded-lg border border-[#1F242F]">
                 <div>
-                  <label className="text-[10px] font-mono text-gray-400 block mb-1">
-                    Item Description / Name
+                  <label className="text-[10px] font-mono text-gray-400 block mb-1 uppercase tracking-wide">
+                    Cargo Description / Tag
                   </label>
                   <input
                     type="text"
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
-                    placeholder="e.g. Upright Piano, Armoire"
-                    className="w-full bg-[#111318] border border-[#1F242F] rounded px-2.5 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-[#0066FF]"
+                    placeholder="e.g. Industrial Safe, Piano"
+                    className="w-full bg-[#111318] border border-[#1F242F] rounded px-2.5 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-[#0066FF] font-mono"
                   />
                 </div>
 
@@ -431,8 +424,8 @@ export function InventoryDrawer({
                       min="1"
                       value={customLength}
                       onChange={(e) => setCustomLength(e.target.value)}
-                      placeholder="e.g. 60"
-                      className="w-full bg-[#111318] border border-[#1F242F] rounded px-2 py-1 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-[#0066FF]"
+                      placeholder="60"
+                      className="w-full bg-[#111318] border border-[#1F242F] rounded px-2 py-1 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-[#0066FF] font-mono"
                     />
                   </div>
                   <div>
@@ -445,8 +438,8 @@ export function InventoryDrawer({
                       min="1"
                       value={customWidth}
                       onChange={(e) => setCustomWidth(e.target.value)}
-                      placeholder="e.g. 24"
-                      className="w-full bg-[#111318] border border-[#1F242F] rounded px-2 py-1 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-[#0066FF]"
+                      placeholder="24"
+                      className="w-full bg-[#111318] border border-[#1F242F] rounded px-2 py-1 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-[#0066FF] font-mono"
                     />
                   </div>
                   <div>
@@ -459,8 +452,8 @@ export function InventoryDrawer({
                       min="1"
                       value={customHeight}
                       onChange={(e) => setCustomHeight(e.target.value)}
-                      placeholder="e.g. 48"
-                      className="w-full bg-[#111318] border border-[#1F242F] rounded px-2 py-1 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-[#0066FF]"
+                      placeholder="48"
+                      className="w-full bg-[#111318] border border-[#1F242F] rounded px-2 py-1 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-[#0066FF] font-mono"
                     />
                   </div>
                 </div>
@@ -474,16 +467,16 @@ export function InventoryDrawer({
                       max="20"
                       value={customQuantity}
                       onChange={(e) => setCustomQuantity(parseInt(e.target.value) || 1)}
-                      className="w-14 bg-[#111318] border border-[#1F242F] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#0066FF]"
+                      className="w-14 bg-[#111318] border border-[#1F242F] rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-[#0066FF] font-mono"
                     />
                   </div>
 
                   <button
                     type="submit"
-                    className="flex items-center gap-1 px-3 py-1.5 rounded bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-mono font-bold tracking-wide transition-colors"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-mono font-bold tracking-wider uppercase transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Add to Truck</span>
+                    <span>Pack Item</span>
                   </button>
                 </div>
 
@@ -492,7 +485,6 @@ export function InventoryDrawer({
                 )}
               </form>
 
-              {/* Added Custom Items List */}
               {customItems.length > 0 && (
                 <div className="space-y-1.5">
                   <div className="text-[10px] font-mono text-gray-400 uppercase">
