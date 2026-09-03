@@ -104,6 +104,16 @@ export function TruckCanvas({
   const [hoveredBlock, setHoveredBlock] = useState<DrawableBlock | null>(null);
   const [mousePos, setMousePos] = useState<Point2D | null>(null);
 
+  // Interaction Helper Pill state
+  const [showHelperPill, setShowHelperPill] = useState<boolean>(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowHelperPill(false);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Projected polygons cache for pixel-perfect raycasting
   const projectedCacheRef = useRef<BlockProjectedFaces[]>([]);
 
@@ -1183,6 +1193,7 @@ export function TruckCanvas({
       userScaleRef.current = newScale;
       panOffsetRef.current = { x: nextPanX, y: nextPanY };
 
+      setShowHelperPill(false);
       setUserScale(newScale);
       setPanOffset({ x: nextPanX, y: nextPanY });
     };
@@ -1199,6 +1210,7 @@ export function TruckCanvas({
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     dragStartRef.current = { x: e.clientX, y: e.clientY };
     hasDraggedRef.current = false;
+    setShowHelperPill(false);
     setIsDragging(true);
   };
 
@@ -1311,6 +1323,18 @@ export function TruckCanvas({
           isDragging ? 'cursor-grabbing' : 'cursor-grab'
         }`}
       />
+
+      {/* Top Ambient Interaction Helper Pill */}
+      <div
+        className={`absolute top-3.5 left-1/2 -translate-x-1/2 z-20 pointer-events-none transition-all duration-700 ease-out ${
+          showHelperPill ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'
+        }`}
+      >
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111318]/90 border border-[#1F242F] backdrop-blur-md text-[11px] font-medium text-zinc-300 shadow-sm">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#0066FF] animate-pulse shrink-0" />
+          <span>Scroll to zoom • Click &amp; drag to pan • Click items to inspect</span>
+        </div>
+      </div>
 
       {/* Floating Interactive Camera Controls HUD */}
       <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1 bg-[#111318]/90 p-1 rounded-md border border-[#1F242F] backdrop-blur-md text-zinc-300">

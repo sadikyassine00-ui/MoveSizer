@@ -93,10 +93,10 @@ export function InventoryDrawer({
   className = '',
 }: InventoryDrawerProps) {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    living_room: true,
-    bedroom: true,
+    living_room: false,
+    bedroom: false,
     dining_office: false,
-    boxes: true,
+    boxes: false,
     custom: false,
   });
 
@@ -108,7 +108,20 @@ export function InventoryDrawer({
   const [customError, setCustomError] = useState<string | null>(null);
 
   const toggleSection = (section: string) => {
-    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
+    setOpenSections((prev) => {
+      const isCurrentlyOpen = !!prev[section];
+      if (isCurrentlyOpen) {
+        return { ...prev, [section]: false };
+      }
+      return {
+        living_room: false,
+        bedroom: false,
+        dining_office: false,
+        boxes: false,
+        custom: false,
+        [section]: true,
+      };
+    });
   };
 
   const handleAddCustom = (e: React.FormEvent) => {
@@ -292,28 +305,28 @@ export function InventoryDrawer({
               <button
                 type="button"
                 onClick={() => toggleSection(cat.id)}
-                className="w-full flex items-center justify-between p-3.5 text-left hover:bg-[#090A0C]/50 transition-colors"
+                className="w-full flex items-center justify-between py-2.5 px-3 text-left hover:bg-[#090A0C]/50 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <CategoryIcon className="w-4 h-4 text-zinc-400" />
+                  <CategoryIcon className="w-3.5 h-3.5 text-zinc-400" />
                   <span className="text-xs font-semibold text-zinc-200 tracking-tight">
                     {cat.title}
                   </span>
                   {itemCountInCategory > 0 && (
-                    <span className="px-2 py-0.2 rounded-full text-[10px] font-medium bg-[#1F242F] text-[#0066FF] tabular-nums">
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-medium bg-[#1F242F] text-[#0066FF] tabular-nums font-mono">
                       {itemCountInCategory}
                     </span>
                   )}
                 </div>
                 {isOpen ? (
-                  <ChevronUp className="w-4 h-4 text-zinc-500" />
+                  <ChevronUp className="w-3.5 h-3.5 text-zinc-500" />
                 ) : (
-                  <ChevronDown className="w-4 h-4 text-zinc-500" />
+                  <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />
                 )}
               </button>
 
               {isOpen && (
-                <div className="p-3 pt-0 space-y-2">
+                <div className="p-2.5 pt-0 space-y-1.5">
                   {catItems.map((item) => {
                     const count = inventory[item.id] || 0;
                     const ItemIcon = getItemIcon(item.id);
@@ -321,20 +334,20 @@ export function InventoryDrawer({
                     return (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between p-2.5 rounded-lg bg-[#090A0C] border border-[#1F242F] hover:border-zinc-700 transition-colors"
+                        className="flex items-center justify-between py-1.5 px-2.5 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-700 transition-colors"
                       >
-                        <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                        <div className="flex items-center gap-2 min-w-0 pr-2">
                           <div
-                            className="w-7 h-7 rounded flex items-center justify-center shrink-0"
+                            className="w-6 h-6 rounded flex items-center justify-center shrink-0"
                             style={{ backgroundColor: `${item.color}20` }}
                           >
-                            <ItemIcon className="w-4 h-4" style={{ color: item.color }} />
+                            <ItemIcon className="w-3.5 h-3.5" style={{ color: item.color }} />
                           </div>
                           <div className="min-w-0">
                             <div className="text-xs font-medium text-white truncate">
                               {item.name}
                             </div>
-                            <div className="flex items-center gap-2 text-[11px] text-zinc-400 tabular-nums">
+                            <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 tabular-nums font-mono">
                               <span className="text-[#0066FF] font-medium">{item.volumeCuFt} cu ft</span>
                               <span>•</span>
                               <span>~{item.weightLbs} lbs</span>
@@ -343,24 +356,24 @@ export function InventoryDrawer({
                         </div>
 
                         {/* Count Stepper */}
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0">
                           <button
                             type="button"
                             onClick={() => onItemQuantityChange(item.id, Math.max(0, count - 1))}
-                            className="w-6 h-6 flex items-center justify-center rounded bg-[#111318] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
+                            className="w-5 h-5 flex items-center justify-center rounded bg-[#111318] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
                             disabled={count <= 0}
                           >
-                            <Minus className="w-3 h-3" />
+                            <Minus className="w-2.5 h-2.5" />
                           </button>
-                          <span className="w-6 text-center text-xs font-semibold text-white tabular-nums">
+                          <span className="w-5 text-center text-xs font-semibold text-white tabular-nums font-mono">
                             {count}
                           </span>
                           <button
                             type="button"
                             onClick={() => onItemQuantityChange(item.id, count + 1)}
-                            className="w-6 h-6 flex items-center justify-center rounded bg-[#111318] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
+                            className="w-5 h-5 flex items-center justify-center rounded bg-[#111318] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
                           >
-                            <Plus className="w-3 h-3" />
+                            <Plus className="w-2.5 h-2.5" />
                           </button>
                         </div>
                       </div>
@@ -377,7 +390,7 @@ export function InventoryDrawer({
           <button
             type="button"
             onClick={() => toggleSection('custom')}
-            className="w-full flex items-center justify-between p-3.5 text-left hover:bg-[#090A0C]/50 transition-colors"
+            className="w-full flex items-center justify-between py-2.5 px-3 text-left hover:bg-[#090A0C]/50 transition-colors"
           >
             <div className="flex items-center gap-2">
               <Maximize2 className="w-4 h-4 text-[#0066FF]" />

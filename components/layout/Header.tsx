@@ -3,7 +3,7 @@
 import React from 'react';
 import { TRUCKS, TRUCK_ORDER, TruckId } from '@/lib/constants/trucks';
 import { PRESETS, PresetId } from '@/lib/constants/presets';
-import { Truck, RotateCcw, FileText, Menu } from 'lucide-react';
+import { Truck, RotateCcw, FileText, Menu, HelpCircle } from 'lucide-react';
 
 interface HeaderProps {
   selectedTruckId: TruckId;
@@ -15,6 +15,7 @@ interface HeaderProps {
   onReset: () => void;
   onOpenManifest?: () => void;
   onOpenNav?: () => void;
+  onOpenHowItWorks?: () => void;
 }
 
 export function Header({
@@ -27,6 +28,7 @@ export function Header({
   onReset,
   onOpenManifest,
   onOpenNav,
+  onOpenHowItWorks,
 }: HeaderProps) {
   return (
     <header className="h-14 border-b border-[#1F242F] bg-[#111318] px-4 flex items-center justify-between shrink-0 z-30 select-none">
@@ -126,6 +128,19 @@ export function Header({
           <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
           <span className="hidden md:inline">Reset</span>
         </button>
+
+        {/* Quick "How It Works" Trigger */}
+        {onOpenHowItWorks && (
+          <button
+            type="button"
+            onClick={onOpenHowItWorks}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
+            title="How TruckSizer Works"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-zinc-400" strokeWidth={1.5} />
+            <span className="hidden md:inline">How It Works</span>
+          </button>
+        )}
 
         {/* Site Directory / Slide-Over Navigation Trigger */}
         {onOpenNav && (
