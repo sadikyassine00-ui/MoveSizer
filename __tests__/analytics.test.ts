@@ -242,4 +242,27 @@ describe('GA4 Centralized Telemetry Utility', () => {
       })
     );
   });
+
+  it('dispatches custom event to window.clarity if available', () => {
+    const clarityMock = vi.fn();
+    Object.defineProperty(global, 'window', {
+      value: {
+        dataLayer: [],
+        gtag: vi.fn(),
+        clarity: clarityMock,
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    trackLeadSubmitted({
+      leadId: 'TS-1234',
+      truckSize: '15ft',
+      originZip: '10001',
+      destinationZip: '90210',
+      cuFt: 500,
+    });
+
+    expect(clarityMock).toHaveBeenCalledWith('event', 'lead_submitted');
+  });
 });

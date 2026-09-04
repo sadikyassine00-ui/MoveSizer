@@ -8,5 +8,9 @@ declare global {
       targetIdOrAction: string | Date,
       params?: Record<string, unknown> | unknown
     ) => void;
+    clarity?: (
+      command: 'set' | 'identify' | 'event' | 'consent' | 'upgrade' | string,
+      ...args: unknown[]
+    ) => void;
   }
 }

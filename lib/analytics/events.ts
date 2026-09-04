@@ -95,9 +95,14 @@ export function trackEvent<E extends FunnelEvent>(
       });
     }
 
-    // 3. Debug Logger in non-production
+    // 3. Microsoft Clarity Event Dispatch
+    if (typeof window.clarity === 'function') {
+      window.clarity('event', eventName);
+    }
+
+    // 4. Debug Logger in non-production
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`[GA4 TELEMETRY EVENT: ${eventName}]`, payload);
+      console.log(`[TELEMETRY EVENT: ${eventName}]`, payload);
     }
   } catch (err) {
     // Silent fail in production to avoid crashing user UI
