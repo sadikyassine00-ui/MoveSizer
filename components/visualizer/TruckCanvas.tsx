@@ -91,6 +91,9 @@ export function TruckCanvas({
   // Active refs for native wheel and touch handlers without stale closure lag
   const userScaleRef = useRef<number>(1.0);
   const panOffsetRef = useRef<Point2D>({ x: 0, y: 0 });
+  const touchPinchDistRef = useRef<number | null>(null);
+  const touchPanStartRef = useRef<Point2D>({ x: 0, y: 0 });
+  const touchHasDraggedRef = useRef<boolean>(false);
 
   useEffect(() => {
     userScaleRef.current = userScale;
@@ -210,10 +213,11 @@ export function TruckCanvas({
       if (py > maxProjY) maxProjY = py;
     }
 
-    const marginX = 70;
-    const marginY = 70;
-    const availWidth = width - marginX * 2;
-    const availHeight = height - marginY * 2;
+    const isMobile = width < 640;
+    const marginX = isMobile ? 16 : 70;
+    const marginY = isMobile ? 18 : 70;
+    const availWidth = Math.max(100, width - marginX * 2);
+    const availHeight = Math.max(100, height - marginY * 2);
 
     const baseScale = Math.min(availWidth / (maxProjX - minProjX), availHeight / (maxProjY - minProjY));
     const midX = (minProjX + maxProjX) / 2;
@@ -1232,7 +1236,7 @@ export function TruckCanvas({
       // Handle wheel and trackpad pinch
       const zoomFactor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
       const currentScale = userScaleRef.current;
-      const newScale = Math.max(0.4, Math.min(3.5, currentScale * zoomFactor));
+      const newScale = Math.max(0.2, Math.min(4.0, currentScale * zoomFactor));
 
       if (newScale === currentScale) return;
 
@@ -1260,11 +1264,136 @@ export function TruckCanvas({
       setPanOffset({ x: nextPanX, y: nextPanY });
     };
 
+    // Native touch handlers for mobile 1-finger pan and 2-finger pinch-to-zoom
+    const onNativeTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        const t = e.touches[0];
+        touchPanStartRef.current = { x: t.clientX, y: t.clientY };
+        touchHasDraggedRef.current = false;
+        touchPinchDistRef.current = null;
+        setShowHelperPill(false);
+      } else if (e.touches.length >= 2) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        touchPinchDistRef.current = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        setShowHelperPill(false);
+      }
+    };
+
+    const onNativeTouchMove = (e: TouchEvent) => {
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+
+      if (e.touches.length === 1 && touchPinchDistRef.current === null) {
+        const t = e.touches[0];
+        const dx = t.clientX - touchPanStartRef.current.x;
+        const dy = t.clientY - touchPanStartRef.current.y;
+
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+          touchHasDraggedRef.current = true;
+        }
+
+        const nextPan = {
+          x: panOffsetRef.current.x + dx,
+          y: panOffsetRef.current.y + dy,
+        };
+        panOffsetRef.current = nextPan;
+        setPanOffset(nextPan);
+
+        touchPanStartRef.current = { x: t.clientX, y: t.clientY };
+      } else if (e.touches.length >= 2) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const newDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+        if (touchPinchDistRef.current && touchPinchDistRef.current > 0) {
+          const pinchRatio = newDist / touchPinchDistRef.current;
+          const currentScale = userScaleRef.current;
+          const nextScale = Math.max(0.2, Math.min(4.0, currentScale * pinchRatio));
+
+          if (Math.abs(nextScale - currentScale) > 0.001) {
+            const rect = canvas.getBoundingClientRect();
+            const centerX = (t1.clientX + t2.clientX) / 2 - rect.left;
+            const centerY = (t1.clientY + t2.clientY) / 2 - rect.top;
+
+            const { baseScale, midX, midY } = baseMetricsRef.current;
+            const currentWorldScale = baseScale * currentScale;
+            const nextWorldScale = baseScale * nextScale;
+
+            const currentPan = panOffsetRef.current;
+            const currentOffsetX = dimensions.width / 2 - midX * currentWorldScale + currentPan.x;
+            const currentOffsetY = dimensions.height / 2 - midY * currentWorldScale + 15 + currentPan.y;
+
+            const ratio = nextWorldScale / currentWorldScale;
+            const nextOffsetX = centerX - (centerX - currentOffsetX) * ratio;
+            const nextOffsetY = centerY - (centerY - currentOffsetY) * ratio;
+
+            const nextPanX = nextOffsetX - (dimensions.width / 2 - midX * nextWorldScale);
+            const nextPanY = nextOffsetY - (dimensions.height / 2 - midY * nextWorldScale + 15);
+
+            userScaleRef.current = nextScale;
+            panOffsetRef.current = { x: nextPanX, y: nextPanY };
+
+            setUserScale(nextScale);
+            setPanOffset({ x: nextPanX, y: nextPanY });
+          }
+        }
+        touchPinchDistRef.current = newDist;
+      }
+    };
+
+    const onNativeTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length === 0) {
+        touchPinchDistRef.current = null;
+        if (!touchHasDraggedRef.current && e.changedTouches.length === 1) {
+          const rect = canvas.getBoundingClientRect();
+          const t = e.changedTouches[0];
+          const tapPoint: Point2D = {
+            x: t.clientX - rect.left,
+            y: t.clientY - rect.top,
+          };
+
+          const reversed = [...projectedCacheRef.current].reverse();
+          let hitBlock: DrawableBlock | null = null;
+          for (const item of reversed) {
+            if (
+              isPointInPolygon(tapPoint, item.topFace) ||
+              isPointInPolygon(tapPoint, item.rightFace) ||
+              isPointInPolygon(tapPoint, item.frontFace)
+            ) {
+              hitBlock = item.block;
+              break;
+            }
+          }
+
+          if (onSelectBlock) {
+            onSelectBlock(hitBlock);
+          }
+          setHoveredBlock(hitBlock);
+          setMousePos(hitBlock ? tapPoint : null);
+        }
+      } else if (e.touches.length === 1) {
+        const t = e.touches[0];
+        touchPanStartRef.current = { x: t.clientX, y: t.clientY };
+        touchPinchDistRef.current = null;
+      }
+    };
+
     canvas.addEventListener('wheel', onNativeWheel, { passive: false });
+    canvas.addEventListener('touchstart', onNativeTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', onNativeTouchMove, { passive: false });
+    canvas.addEventListener('touchend', onNativeTouchEnd, { passive: false });
+    canvas.addEventListener('touchcancel', onNativeTouchEnd, { passive: false });
+
     return () => {
       canvas.removeEventListener('wheel', onNativeWheel);
+      canvas.removeEventListener('touchstart', onNativeTouchStart);
+      canvas.removeEventListener('touchmove', onNativeTouchMove);
+      canvas.removeEventListener('touchend', onNativeTouchEnd);
+      canvas.removeEventListener('touchcancel', onNativeTouchEnd);
     };
-  }, [dimensions]);
+  }, [dimensions, onSelectBlock]);
 
   // =========================================================================
   // CAMERA INTERACTIONS: MOUSE DRAG PANNING & CLICK DETECTION
@@ -1354,7 +1483,7 @@ export function TruckCanvas({
 
   const handleZoomIn = () => {
     setUserScale((prev) => {
-      const next = Math.min(3.5, prev * 1.25);
+      const next = Math.min(4.0, prev * 1.25);
       userScaleRef.current = next;
       return next;
     });
@@ -1362,7 +1491,7 @@ export function TruckCanvas({
 
   const handleZoomOut = () => {
     setUserScale((prev) => {
-      const next = Math.max(0.4, prev / 1.25);
+      const next = Math.max(0.2, prev / 1.25);
       userScaleRef.current = next;
       return next;
     });
@@ -1371,7 +1500,7 @@ export function TruckCanvas({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-full min-h-[440px] bg-[#090A0C] overflow-hidden select-none overscroll-contain touch-none ${className}`}
+      className={`relative w-full h-full min-h-0 bg-[#090A0C] overflow-hidden select-none overscroll-contain touch-none ${className}`}
       style={{ overscrollBehavior: 'contain', touchAction: 'none' }}
     >
       <canvas
@@ -1386,9 +1515,9 @@ export function TruckCanvas({
         }`}
       />
 
-      {/* Top Ambient Interaction Helper Pill */}
+      {/* Top Ambient Interaction Helper Pill (Desktop only) */}
       <div
-        className={`absolute top-3.5 left-1/2 -translate-x-1/2 z-20 pointer-events-none transition-all duration-700 ease-out ${
+        className={`hidden sm:block absolute top-3.5 left-1/2 -translate-x-1/2 z-20 pointer-events-none transition-all duration-700 ease-out ${
           showHelperPill ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'
         }`}
       >
@@ -1399,11 +1528,11 @@ export function TruckCanvas({
       </div>
 
       {/* Floating Interactive Camera Controls HUD */}
-      <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1 bg-[#111318]/90 p-1 rounded-md border border-[#1F242F] backdrop-blur-md text-zinc-300">
+      <div className="absolute bottom-2.5 right-2.5 sm:bottom-4 sm:right-4 z-20 flex items-center gap-1 bg-[#111318]/95 p-1 rounded-md border border-[#1F242F] backdrop-blur-md text-zinc-300 shadow-md">
         <button
           type="button"
           onClick={handleZoomIn}
-          className="p-1 rounded-md hover:bg-[#1F242F] hover:text-white transition-colors"
+          className="p-1.5 sm:p-1 rounded-md hover:bg-[#1F242F] hover:text-white transition-colors"
           title="Zoom In (or Scroll Up)"
           aria-label="Zoom in cargo view"
         >
@@ -1413,7 +1542,7 @@ export function TruckCanvas({
         <button
           type="button"
           onClick={handleZoomOut}
-          className="p-1 rounded-md hover:bg-[#1F242F] hover:text-white transition-colors"
+          className="p-1.5 sm:p-1 rounded-md hover:bg-[#1F242F] hover:text-white transition-colors"
           title="Zoom Out (or Scroll Down)"
           aria-label="Zoom out cargo view"
         >
@@ -1425,14 +1554,14 @@ export function TruckCanvas({
         <button
           type="button"
           onClick={handleResetCamera}
-          className="p-1 rounded-md hover:bg-[#1F242F] hover:text-white transition-colors"
+          className="p-1.5 sm:p-1 rounded-md hover:bg-[#1F242F] hover:text-white transition-colors"
           title="Reset Camera Framing"
           aria-label="Reset camera framing"
         >
           <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
         </button>
 
-        <div className="px-1.5 text-[11px] font-mono text-zinc-400 tabular-nums">
+        <div className="px-1 text-[10px] sm:text-[11px] font-mono text-zinc-400 tabular-nums">
           {Math.round(userScale * 100)}%
         </div>
       </div>
@@ -1487,25 +1616,30 @@ export function TruckCanvas({
         </div>
       )}
 
-      {/* Top Left Truck Legend Badge & Technical Readout */}
-      <div className="absolute top-4 left-4 z-10 flex flex-col gap-1.5 pointer-events-none">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111318]/90 border border-[#1F242F] backdrop-blur-sm">
-          <div className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-          <span className="text-xs font-semibold text-white tracking-tight">
-            {truck.name} <span className="text-zinc-400 font-normal tabular-nums">({truck.volumeCuFt} cu ft)</span>
+      {/* Top Left Truck Legend Badge & Technical Readout (Streamlined on mobile to avoid intersecting cargo) */}
+      <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4 z-10 flex flex-col gap-1 pointer-events-none max-w-[calc(100%-80px)]">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg bg-[#111318]/90 border border-[#1F242F] backdrop-blur-sm shadow-sm w-fit">
+          <div className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse shrink-0" />
+          <span className="text-[11px] sm:text-xs font-semibold text-white tracking-tight truncate">
+            {truck.name} <span className="text-zinc-400 font-normal font-mono tabular-nums">({truck.volumeCuFt} cu ft)</span>
           </span>
+          {truck.attic && (
+            <span className="hidden sm:inline-flex text-[9px] px-1.5 py-0.5 rounded bg-[#FF5500]/20 text-[#FF5500] font-mono font-medium ml-1">
+              Mom&apos;s Attic
+            </span>
+          )}
         </div>
 
         {truck.attic && (
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#111318]/90 border border-[#1F242F] text-[10px] text-zinc-400 font-mono backdrop-blur-sm">
+          <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded bg-[#111318]/90 border border-[#1F242F] text-[10px] text-zinc-400 font-mono backdrop-blur-sm w-fit">
             <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
             <span>Mom&apos;s Attic: Fragiles &amp; Box Tier Only (Max 500 lbs)</span>
           </div>
         )}
 
-        <div className="text-[11px] text-zinc-500 px-1 tabular-nums flex items-center gap-1.5">
+        <div className="hidden sm:flex text-[11px] text-zinc-500 px-1 tabular-nums items-center gap-1.5">
           <Move className="w-3 h-3 text-[#0066FF]" />
-          <span>Click & drag to pan • Scroll to zoom</span>
+          <span>Click &amp; drag to pan • Scroll to zoom</span>
         </div>
       </div>
     </div>

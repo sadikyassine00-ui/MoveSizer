@@ -41,7 +41,7 @@ export function Header({
       {/* 2. Core Functional Controls: Presets & Truck Sizing */}
       <div className="flex items-center gap-2">
         {/* Dwelling Presets: [Studio] [1-2 Bed] [3+ Bed] */}
-        <div className="flex items-center gap-1 bg-[#090A0C] p-1 rounded-lg border border-[#1F242F]">
+        <div className="hidden min-[380px]:flex items-center gap-0.5 sm:gap-1 bg-[#090A0C] p-0.5 sm:p-1 rounded-lg border border-[#1F242F]">
           {(['studio', '1-2_bed', '3+_bed'] as PresetId[]).map((pid) => {
             const p = PRESETS[pid];
             const isActive = selectedPreset === pid;
@@ -51,7 +51,7 @@ export function Header({
                 type="button"
                 onClick={() => onSelectPreset(pid)}
                 aria-label={`Select ${p.label} dwelling preset`}
-                className={`px-2.5 sm:px-3 py-1 rounded-md text-xs transition-all ${
+                className={`px-2 sm:px-3 py-1 rounded-md text-[11px] sm:text-xs transition-all ${
                   isActive
                     ? 'bg-[#FF5500] text-black font-bold shadow-sm'
                     : 'text-zinc-300 hover:text-white hover:bg-white/10'
@@ -88,12 +88,12 @@ export function Header({
       </div>
 
       {/* 3. Streamlined Utility Strip: Unit Toggle & Clear All */}
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {/* Unit Toggle: [Imperial / Metric] */}
         <button
           type="button"
           onClick={onToggleUnitSystem}
-          className="px-2.5 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-mono text-zinc-300 hover:text-white transition-colors"
+          className="hidden sm:block px-2.5 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-mono text-zinc-300 hover:text-white transition-colors"
           title={`Switch to ${unitSystem === 'imperial' ? 'metric' : 'imperial'} units`}
           aria-label={`Switch to ${unitSystem === 'imperial' ? 'metric' : 'imperial'} units`}
         >

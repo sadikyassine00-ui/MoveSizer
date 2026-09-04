@@ -191,7 +191,7 @@ export function AppShell({
   };
 
   return (
-    <div className="flex flex-col min-h-screen w-screen bg-[#090A0C] text-[#F8F9FA] overflow-x-hidden font-sans">
+    <div className="flex flex-col min-h-screen w-full bg-[#090A0C] text-[#F8F9FA] overflow-x-hidden font-sans">
       {/* 1. Global Micro-Header */}
       <Header
         selectedTruckId={selectedTruckId}
@@ -275,11 +275,15 @@ export function AppShell({
       </div>
 
       {/* ================================================================= */}
-      {/* MOBILE VIEWPORT (< 1024px): Sticky Canvas + Bottom Sheet          */}
+      {/* MOBILE VIEWPORT (< 1024px): Responsive Canvas + Bottom Sheet      */}
       {/* ================================================================= */}
-      <div className="flex lg:hidden flex-col h-[calc(100vh-3.5rem)] min-h-[580px] shrink-0 overflow-hidden relative">
-        {/* Top 45%: Sticky 2.5D Canvas */}
-        <div className="h-[45%] w-full bg-[#090A0C] relative shrink-0 border-b border-[#1F242F]">
+      <div className="flex lg:hidden flex-col h-[calc(100dvh-3.5rem)] w-full overflow-hidden relative">
+        {/* Top: 2.5D Canvas (expands to flex-1 when bottom sheet is collapsed) */}
+        <div
+          className={`w-full bg-[#090A0C] relative shrink-0 border-b border-[#1F242F] transition-all duration-300 ${
+            isMobileSheetOpen ? 'h-[44%] min-h-[220px]' : 'flex-1 min-h-[300px]'
+          }`}
+        >
           <TruckCanvas
             truck={currentTruck}
             blocks={packResult.blocks}
@@ -288,10 +292,10 @@ export function AppShell({
           />
         </div>
 
-        {/* Bottom 55%: Swipeable/Tabbed Bottom Sheet */}
+        {/* Bottom: Swipeable/Tabbed Bottom Sheet */}
         <div
-          className={`flex-1 flex flex-col bg-[#111318] overflow-hidden transition-all duration-300 ${
-            isMobileSheetOpen ? 'h-[55%]' : 'h-14'
+          className={`flex flex-col bg-[#111318] overflow-hidden transition-all duration-300 ${
+            isMobileSheetOpen ? 'h-[56%]' : 'h-12 shrink-0'
           }`}
         >
           {/* Bottom Sheet Header Bar with Tabs */}
