@@ -14,7 +14,7 @@ import { ConversionCard } from '@/components/ui/ConversionCard';
 import { LoadManifestModal } from '@/components/ui/LoadManifestModal';
 import { FooterInfoSection } from '@/components/layout/FooterInfoSection';
 import { NavDrawer } from '@/components/layout/NavDrawer';
-import { trackPresetSelected } from '@/lib/analytics/events';
+import { trackPresetSelected, trackDwellingSelected } from '@/lib/analytics/events';
 import { Layers, FileText, ChevronUp, ChevronDown, X, ArrowRight } from 'lucide-react';
 
 interface AppShellProps {
@@ -100,6 +100,14 @@ export function AppShell({
       setInventory(newInventory);
       setSelectedBlock(null);
       trackPresetSelected(presetId, preset.defaultTruck);
+
+      const targetTruck = TRUCKS[preset.defaultTruck];
+      const cap = calculateCapacity(targetTruck, newInventory);
+      trackDwellingSelected({
+        dwelling: presetId,
+        estimatedCuFt: cap.totalVolumeCuFt,
+        truckSize: preset.defaultTruck,
+      });
     },
     [density]
   );
@@ -260,6 +268,7 @@ export function AppShell({
             capacityResult={capacityResult}
             inventory={inventory}
             customItems={customItems}
+            dwellingType={selectedPreset || 'custom'}
             onOpenManifest={handleOpenManifestWithInfo}
           />
         </div>
@@ -369,6 +378,7 @@ export function AppShell({
                   capacityResult={capacityResult}
                   inventory={inventory}
                   customItems={customItems}
+                  dwellingType={selectedPreset || 'custom'}
                   onOpenManifest={handleOpenManifestWithInfo}
                   className="border-l-0"
                 />

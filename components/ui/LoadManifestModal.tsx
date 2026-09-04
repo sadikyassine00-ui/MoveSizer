@@ -16,6 +16,7 @@ import {
   Truck,
   ShieldCheck,
 } from 'lucide-react';
+import { trackManifestDownloaded } from '@/lib/analytics/events';
 
 interface LoadManifestModalProps {
   isOpen: boolean;
@@ -97,6 +98,9 @@ export function LoadManifestModal({
     });
 
   const allManifestItems = [...activeFurniture, ...activeCustom];
+
+  const totalItemCount =
+    totalBoxes + allManifestItems.reduce((acc, it) => acc + it.quantity, 0);
 
   /**
    * Generates pure standalone HTML for printing or saving as file.
@@ -371,6 +375,12 @@ export function LoadManifestModal({
    * Print via isolated iframe to guarantee ZERO canvas pixels or dark mode artifacts in print preview.
    */
   const handlePrint = () => {
+    trackManifestDownloaded({
+      truckSize: truck.name,
+      itemCount: totalItemCount,
+      format: 'print_pdf',
+    });
+
     const html = generateStandaloneHTML();
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
@@ -411,6 +421,12 @@ export function LoadManifestModal({
    * Direct download of standalone HTML document
    */
   const handleDownloadHTML = () => {
+    trackManifestDownloaded({
+      truckSize: truck.name,
+      itemCount: totalItemCount,
+      format: 'html',
+    });
+
     const html = generateStandaloneHTML();
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);

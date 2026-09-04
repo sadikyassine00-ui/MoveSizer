@@ -18,13 +18,21 @@ import {
   Mail,
   Loader2,
 } from 'lucide-react';
-import { trackQuoteFormSubmitted, trackQuoteStep2Reached } from '@/lib/analytics/events';
+import {
+  trackQuoteStep2Reached,
+  trackQuoteFormSubmitted,
+  trackRouteCalculated,
+  trackDwellingSelected,
+  trackLeadSubmitted,
+  trackAffiliateClick,
+} from '@/lib/analytics/events';
 
 interface ConversionCardProps {
   truck: TruckSpec;
   capacityResult: CapacityCalculationResult;
   inventory: Record<string, number>;
   customItems: CustomItemInput[];
+  dwellingType?: string;
   onOpenManifest?: (info: {
     leadId: string;
     originZip: string;
@@ -49,6 +57,7 @@ export function ConversionCard({
   capacityResult,
   inventory,
   customItems,
+  dwellingType,
   onOpenManifest,
   className = '',
 }: ConversionCardProps) {
@@ -136,10 +145,32 @@ export function ConversionCard({
       setPricingResult(pricing);
       setStep(2);
       trackQuoteStep2Reached(originZip.trim(), destinationZip.trim(), truck.id);
+      trackRouteCalculated({
+        originZip: originZip.trim(),
+        destinationZip: destinationZip.trim(),
+        roadMiles: pricing.roadMiles,
+        isLocal: pricing.isLocal,
+      });
+      trackDwellingSelected({
+        dwelling: dwellingType || 'custom',
+        estimatedCuFt: capacityResult.totalVolumeCuFt,
+        truckSize: truck.id,
+      });
     } catch {
       // Graceful degradation
       setStep(2);
       trackQuoteStep2Reached(originZip.trim(), destinationZip.trim(), truck.id);
+      trackRouteCalculated({
+        originZip: originZip.trim(),
+        destinationZip: destinationZip.trim(),
+        roadMiles: 250,
+        isLocal: false,
+      });
+      trackDwellingSelected({
+        dwelling: dwellingType || 'custom',
+        estimatedCuFt: capacityResult.totalVolumeCuFt,
+        truckSize: truck.id,
+      });
     } finally {
       setIsCalculatingRoute(false);
     }
@@ -184,6 +215,16 @@ export function ConversionCard({
         originZip.trim(),
         destinationZip.trim()
       );
+
+      trackLeadSubmitted({
+        leadId: data.leadId,
+        dwellingType: dwellingType || 'custom',
+        truckSize: truck.id,
+        originZip: originZip.trim(),
+        destinationZip: destinationZip.trim(),
+        distanceMiles: pricingResult?.roadMiles,
+        cuFt: capacityResult.totalVolumeCuFt,
+      });
     } catch (err: unknown) {
       setErrors({
         form: err instanceof Error ? err.message : 'Submission failed. Please try again.',
@@ -260,6 +301,24 @@ export function ConversionCard({
                 <FileText className="w-3.5 h-3.5" strokeWidth={1.5} />
                 <span>View &amp; Print Load Manifest</span>
               </button>
+
+              {/* Outbound Verified Carrier Affiliate Partner Link */}
+              <a
+                href="https://www.moving.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() =>
+                  trackAffiliateClick({
+                    partnerName: 'MovingNetwork',
+                    placement: 'confirmation_card',
+                    url: 'https://www.moving.com',
+                  })
+                }
+                className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-md text-xs font-semibold text-zinc-200 hover:text-white bg-[#1F242F] hover:bg-zinc-700 transition-colors duration-150"
+              >
+                <span>Compare Carrier Quotes on Moving.com</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#FF5500]" strokeWidth={1.5} />
+              </a>
 
               <button
                 type="button"
