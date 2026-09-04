@@ -1405,6 +1405,7 @@ export function TruckCanvas({
           onClick={handleZoomIn}
           className="p-1 rounded-md hover:bg-[#1F242F] hover:text-white transition-colors"
           title="Zoom In (or Scroll Up)"
+          aria-label="Zoom in cargo view"
         >
           <ZoomIn className="w-3.5 h-3.5" strokeWidth={1.5} />
         </button>
@@ -1414,6 +1415,7 @@ export function TruckCanvas({
           onClick={handleZoomOut}
           className="p-1 rounded-md hover:bg-[#1F242F] hover:text-white transition-colors"
           title="Zoom Out (or Scroll Down)"
+          aria-label="Zoom out cargo view"
         >
           <ZoomOut className="w-3.5 h-3.5" strokeWidth={1.5} />
         </button>
@@ -1425,6 +1427,7 @@ export function TruckCanvas({
           onClick={handleResetCamera}
           className="p-1 rounded-md hover:bg-[#1F242F] hover:text-white transition-colors"
           title="Reset Camera Framing"
+          aria-label="Reset camera framing"
         >
           <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
         </button>

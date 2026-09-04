@@ -324,6 +324,7 @@ export function AppShell({
             <button
               type="button"
               onClick={() => setIsMobileSheetOpen((prev) => !prev)}
+              aria-label={isMobileSheetOpen ? 'Collapse cargo and rates drawer' : 'Expand cargo and rates drawer'}
               className="p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-[#1F242F]"
             >
               {isMobileSheetOpen ? (

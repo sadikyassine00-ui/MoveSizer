@@ -171,11 +171,11 @@ export function InventoryDrawer({
       {/* 1. Header & Standard Dwelling Presets */}
       <div className="p-3.5 border-b border-[#1F242F] space-y-2.5 shrink-0">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-semibold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5">
+          <span className="text-[11px] font-semibold tracking-wider uppercase text-zinc-300 flex items-center gap-1.5">
             <LayoutGrid className="w-3.5 h-3.5 text-zinc-400" strokeWidth={1.5} />
             Dwelling Profiles
           </span>
-          <span className="text-[10px] font-mono text-zinc-500 uppercase">Presets</span>
+          <span className="text-[10px] font-mono text-zinc-300 uppercase font-semibold">Presets</span>
         </div>
 
         <div className="grid grid-cols-3 gap-1.5">
@@ -187,14 +187,15 @@ export function InventoryDrawer({
                 key={pid}
                 type="button"
                 onClick={() => onSelectPreset(pid)}
+                aria-label={`Select ${preset.label} preset`}
                 className={`flex flex-col items-center justify-center p-2 rounded-md border text-xs transition-colors ${
                   isActive
-                    ? 'bg-[#FF5500]/15 border-[#FF5500] text-white'
-                    : 'bg-[#090A0C] border-[#1F242F] text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
+                    ? 'bg-[#FF5500]/20 border-[#FF5500] text-white'
+                    : 'bg-[#090A0C] border-[#1F242F] text-zinc-300 hover:border-zinc-500 hover:text-white'
                 }`}
               >
                 <span className="font-semibold text-xs tracking-tight">{preset.label}</span>
-                <span className="text-[10px] text-zinc-500 mt-0.5 font-mono tabular-nums">{preset.defaultTruck}</span>
+                <span className={`text-[10px] mt-0.5 font-mono tabular-nums ${isActive ? 'text-orange-200' : 'text-zinc-300'}`}>{preset.defaultTruck}</span>
               </button>
             );
           })}
@@ -204,17 +205,17 @@ export function InventoryDrawer({
       {/* 2. Baseline Occupancy & Box Density Model */}
       <div className="p-3.5 border-b border-[#1F242F] space-y-3 bg-[#0D0F14] shrink-0">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-semibold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5">
+          <span className="text-[11px] font-semibold tracking-wider uppercase text-zinc-300 flex items-center gap-1.5">
             <Sliders className="w-3.5 h-3.5 text-zinc-400" strokeWidth={1.5} />
             Occupancy & Density
           </span>
-          <span className="text-[10px] font-mono text-zinc-500 uppercase">Dynamic</span>
+          <span className="text-[10px] font-mono text-zinc-300 uppercase font-semibold">Dynamic</span>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           {/* Bedrooms Stepper */}
           <div className="space-y-1 bg-[#111318] p-2 rounded-md border border-[#1F242F]">
-            <div className="flex items-center justify-between text-xs text-zinc-400">
+            <div className="flex items-center justify-between text-xs text-zinc-300">
               <span className="flex items-center gap-1 text-[11px]">
                 <Home className="w-3 h-3 text-zinc-400" strokeWidth={1.5} /> Bedrooms
               </span>
@@ -224,6 +225,7 @@ export function InventoryDrawer({
               <button
                 type="button"
                 onClick={() => onBedroomsChange(Math.max(1, bedrooms - 1))}
+                aria-label="Decrease bedrooms"
                 className="w-6 h-6 flex items-center justify-center rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
                 disabled={bedrooms <= 1}
               >
@@ -233,6 +235,7 @@ export function InventoryDrawer({
               <button
                 type="button"
                 onClick={() => onBedroomsChange(Math.min(5, bedrooms + 1))}
+                aria-label="Increase bedrooms"
                 className="w-6 h-6 flex items-center justify-center rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
                 disabled={bedrooms >= 5}
               >
@@ -243,7 +246,7 @@ export function InventoryDrawer({
 
           {/* Occupants Stepper */}
           <div className="space-y-1 bg-[#111318] p-2 rounded-md border border-[#1F242F]">
-            <div className="flex items-center justify-between text-xs text-zinc-400">
+            <div className="flex items-center justify-between text-xs text-zinc-300">
               <span className="flex items-center gap-1 text-[11px]">
                 <Users className="w-3 h-3 text-zinc-400" strokeWidth={1.5} /> Occupants
               </span>
@@ -253,6 +256,7 @@ export function InventoryDrawer({
               <button
                 type="button"
                 onClick={() => onOccupantsChange(Math.max(1, occupants - 1))}
+                aria-label="Decrease occupants"
                 className="w-6 h-6 flex items-center justify-center rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
                 disabled={occupants <= 1}
               >
@@ -262,6 +266,7 @@ export function InventoryDrawer({
               <button
                 type="button"
                 onClick={() => onOccupantsChange(Math.min(6, occupants + 1))}
+                aria-label="Increase occupants"
                 className="w-6 h-6 flex items-center justify-center rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
                 disabled={occupants >= 6}
               >
@@ -273,10 +278,12 @@ export function InventoryDrawer({
 
         {/* Density Dropdown */}
         <div className="space-y-1">
-          <label className="text-[10px] uppercase tracking-wider text-zinc-400 flex items-center justify-between">
+          <label htmlFor="density-select" className="text-[10px] uppercase tracking-wider text-zinc-300 font-medium flex items-center justify-between">
             <span>Box Density Multiplier</span>
           </label>
           <select
+            id="density-select"
+            aria-label="Box Density Multiplier"
             value={density}
             onChange={(e) => onDensityChange(e.target.value as DensityLevel)}
             className="w-full bg-[#090A0C] border border-[#1F242F] rounded-md px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500"
@@ -372,6 +379,7 @@ export function InventoryDrawer({
                           <button
                             type="button"
                             onClick={() => onItemQuantityChange(item.id, Math.max(0, count - 1))}
+                            aria-label={`Decrease ${item.name} quantity`}
                             className="w-5 h-5 flex items-center justify-center rounded bg-[#111318] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
                             disabled={count <= 0}
                           >
@@ -383,6 +391,7 @@ export function InventoryDrawer({
                           <button
                             type="button"
                             onClick={() => onItemQuantityChange(item.id, count + 1)}
+                            aria-label={`Increase ${item.name} quantity`}
                             className="w-5 h-5 flex items-center justify-center rounded bg-[#111318] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 transition-colors"
                           >
                             <Plus className="w-2.5 h-2.5" />
@@ -529,8 +538,9 @@ export function InventoryDrawer({
                       <button
                         type="button"
                         onClick={() => onRemoveCustomItem(c.id)}
-                        className="p-1 rounded text-zinc-500 hover:text-[#EF4444] transition-colors"
-                        title="Remove item"
+                        className="p-1 rounded text-zinc-400 hover:text-[#EF4444] transition-colors"
+                        title={`Remove ${c.name}`}
+                        aria-label={`Remove ${c.name}`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

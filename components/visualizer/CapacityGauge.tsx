@@ -181,7 +181,8 @@ export function CapacityGauge({
               trackSizeUpClicked(capacityResult.truck.id, nextTruck.id, fillPercentage);
               onUpgradeTruck(nextTruck.id);
             }}
-            className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-semibold tracking-wide transition-colors duration-150"
+            aria-label={`Upgrade to ${nextTruck.name}`}
+            className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md bg-[#FF5500] hover:bg-[#E04B00] text-black font-bold text-xs tracking-wide transition-colors duration-150 shadow-sm"
           >
             <span>Upgrade to {nextTruck.id}</span>
             <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={1.5} />

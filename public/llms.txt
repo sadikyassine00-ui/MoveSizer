@@ -1,8 +1,8 @@
 # TruckSizer: Visual Moving Truck Cargo Volume & Vehicle Sizing Engine
 > High-performance 2.5D isometric moving truck fit planner, spatial volumetric modeling tool, and commercial logistics rate comparison engine.
 
-Website: https://trucksizer.com
-Full Documentation: https://trucksizer.com/llms-full.txt
+- [Official Website](https://www.trucksizer.com)
+- [Full LLM Documentation](https://www.trucksizer.com/llms-full.txt)
 
 ## Project Summary
 TruckSizer models real-world cargo volume inside standard US rental moving trucks (10ft, 15ft, 20ft, 26ft). It combines an interactive 2.5D isometric HTML5 canvas cross-section with an automated packing heuristic and dynamic box estimator to verify whether a household inventory or individual furniture item fits safely before moving day.
@@ -43,23 +43,25 @@ Total Boxes = ((Bedrooms × 20) + (Occupants × 10)) × Density Multiplier
 ## Programmatic Guides & Direct Index Links
 
 ### Dwelling Sizing Guides
-- Studio Apartment: https://trucksizer.com/truck-size/studio-apartment
-- 1-Bedroom Apartment: https://trucksizer.com/truck-size/1-bedroom-apartment
-- 2-Bedroom Apartment: https://trucksizer.com/truck-size/2-bedroom-apartment
-- 3-Bedroom Home: https://trucksizer.com/truck-size/3-bedroom-home
-- 4-Bedroom House: https://trucksizer.com/truck-size/4-bedroom-house
+- [Studio Apartment Moving Truck Guide](https://www.trucksizer.com/truck-size/studio-apartment)
+- [1-Bedroom Apartment Moving Truck Guide](https://www.trucksizer.com/truck-size/1-bedroom-apartment)
+- [2-Bedroom Apartment Moving Truck Guide](https://www.trucksizer.com/truck-size/2-bedroom-apartment)
+- [2-Bedroom House Moving Truck Guide](https://www.trucksizer.com/truck-size/2-bedroom-house)
+- [3-Bedroom House Moving Truck Guide](https://www.trucksizer.com/truck-size/3-bedroom-house)
+- [3-Bedroom Home Moving Truck Guide](https://www.trucksizer.com/truck-size/3-bedroom-home)
+- [4-Bedroom House Moving Truck Guide](https://www.trucksizer.com/truck-size/4-bedroom-house)
 
 ### Single-Item Clearance Checks ("Will It Fit?")
-- King Mattress in 10-ft Truck: https://trucksizer.com/will-it-fit/king-mattress-in-10ft-truck
-- Queen Bed in 10-ft Truck: https://trucksizer.com/will-it-fit/queen-bed-in-10ft-truck
-- Sectional Sofa in 15-ft Truck: https://trucksizer.com/will-it-fit/sectional-sofa-in-15ft-truck
-- 3-Seat Sofa in 10-ft Truck: https://trucksizer.com/will-it-fit/3-seat-sofa-in-10ft-truck
-- Dining Table in 10-ft Truck: https://trucksizer.com/will-it-fit/dining-table-in-10ft-truck
-- 6-Drawer Dresser in 10-ft Truck: https://trucksizer.com/will-it-fit/dresser-in-10ft-truck
-- Wardrobe Box in 10-ft Truck: https://trucksizer.com/will-it-fit/wardrobe-box-in-10ft-truck
-- King Mattress in 15-ft Truck: https://trucksizer.com/will-it-fit/king-mattress-in-15ft-truck
+- [King Mattress in 10-ft Truck](https://www.trucksizer.com/will-it-fit/king-mattress-in-10ft-truck)
+- [Queen Bed in 10-ft Truck](https://www.trucksizer.com/will-it-fit/queen-bed-in-10ft-truck)
+- [Sectional Sofa in 15-ft Truck](https://www.trucksizer.com/will-it-fit/sectional-sofa-in-15ft-truck)
+- [3-Seat Sofa in 10-ft Truck](https://www.trucksizer.com/will-it-fit/3-seat-sofa-in-10ft-truck)
+- [Dining Table in 10-ft Truck](https://www.trucksizer.com/will-it-fit/dining-table-in-10ft-truck)
+- [6-Drawer Dresser in 10-ft Truck](https://www.trucksizer.com/will-it-fit/dresser-in-10ft-truck)
+- [Wardrobe Box in 10-ft Truck](https://www.trucksizer.com/will-it-fit/wardrobe-box-in-10ft-truck)
+- [King Mattress in 15-ft Truck](https://www.trucksizer.com/will-it-fit/king-mattress-in-15ft-truck)
 
 ### Technical Resources & Methodology
-- Calculation Engine & Buffer Specs: https://trucksizer.com/how-we-calculate
-- Terms of Service & Disclaimer: https://trucksizer.com/terms
-- Privacy Policy: https://trucksizer.com/privacy
+- [Calculation Engine & Buffer Specs](https://www.trucksizer.com/how-we-calculate)
+- [Terms of Service & Disclaimer](https://www.trucksizer.com/terms)
+- [Privacy Policy](https://www.trucksizer.com/privacy)

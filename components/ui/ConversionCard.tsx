@@ -287,11 +287,12 @@ export function ConversionCard({
             <div className="space-y-3">
               {/* Origin ZIP */}
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-zinc-400 flex items-center gap-1.5 uppercase tracking-wider">
+                <label htmlFor="origin-zip" className="text-[10px] font-semibold text-zinc-300 flex items-center gap-1.5 uppercase tracking-wider">
                   <MapPin className="w-3 h-3 text-[#FF5500]" strokeWidth={1.5} />
                   Origin ZIP Code
                 </label>
                 <input
+                  id="origin-zip"
                   type="text"
                   maxLength={5}
                   value={originZip}
@@ -302,7 +303,7 @@ export function ConversionCard({
                   placeholder="e.g. 90210"
                   className={`w-full bg-[#090A0C] border ${
                     errors.originZip ? 'border-[#EF4444]' : 'border-[#1F242F]'
-                  } rounded-md px-3 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500 tabular-nums`}
+                  } rounded-md px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-400 focus:border-zinc-400 tabular-nums`}
                 />
                 {errors.originZip && (
                   <p className="text-[10px] text-[#EF4444]">{errors.originZip}</p>
@@ -311,11 +312,12 @@ export function ConversionCard({
 
               {/* Destination ZIP */}
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-zinc-400 flex items-center gap-1.5 uppercase tracking-wider">
+                <label htmlFor="destination-zip" className="text-[10px] font-semibold text-zinc-300 flex items-center gap-1.5 uppercase tracking-wider">
                   <MapPin className="w-3 h-3 text-[#0066FF]" strokeWidth={1.5} />
                   Destination ZIP Code
                 </label>
                 <input
+                  id="destination-zip"
                   type="text"
                   maxLength={5}
                   value={destinationZip}
@@ -326,7 +328,7 @@ export function ConversionCard({
                   placeholder="e.g. 10001"
                   className={`w-full bg-[#090A0C] border ${
                     errors.destinationZip ? 'border-[#EF4444]' : 'border-[#1F242F]'
-                  } rounded-md px-3 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500 tabular-nums`}
+                  } rounded-md px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-400 focus:border-zinc-400 tabular-nums`}
                 />
                 {errors.destinationZip && (
                   <p className="text-[10px] text-[#EF4444]">{errors.destinationZip}</p>
@@ -340,7 +342,7 @@ export function ConversionCard({
                 {/* Route Summary Pill */}
                 <div className="p-2.5 rounded-md bg-[#090A0C] border border-[#1F242F] text-xs space-y-1">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 uppercase font-mono tracking-wider">
+                    <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 uppercase font-mono tracking-wider">
                       <span>Verified Route</span>
                       {pricingResult?.roadMiles && (
                         <span>• ~{pricingResult.roadMiles.toLocaleString()} road miles</span>
@@ -358,7 +360,7 @@ export function ConversionCard({
                     {pricingResult?.originPlace ? `${pricingResult.originPlace} (${originZip})` : originZip} → {pricingResult?.destinationPlace ? `${pricingResult.destinationPlace} (${destinationZip})` : destinationZip}
                   </span>
                   {pricingResult?.isLocal !== undefined && (
-                    <span className="text-[10px] text-zinc-400 font-sans block">
+                    <span className="text-[10px] text-zinc-300 font-sans block">
                       {pricingResult.isLocal ? 'Local Metro Service (Day Rate + Crew)' : 'Interstate Long-Distance Freight'}
                     </span>
                   )}
@@ -367,23 +369,24 @@ export function ConversionCard({
                 {/* Instant Dynamic Pricing Estimate Badge */}
                 <div className="p-2.5 rounded-md bg-[#10B981]/10 border border-[#10B981]/30 text-xs space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-300 font-medium">Estimated Carrier Rate:</span>
+                    <span className="text-zinc-200 font-medium">Estimated Carrier Rate:</span>
                     <span className="font-bold text-[#10B981] font-mono tabular-nums text-sm">
                       {pricingResult ? pricingResult.formatted : ratePreview.formatted}
                     </span>
                   </div>
-                  <p className="text-[10px] text-zinc-400 leading-tight">
+                  <p className="text-[10px] text-zinc-300 leading-tight">
                     {pricingResult?.caption || `Estimated based on ~250 road miles and ${truck.name} cargo volume.`}
                   </p>
                 </div>
 
                 {/* Move Date */}
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-zinc-400 flex items-center gap-1.5 uppercase tracking-wider">
+                  <label htmlFor="move-date" className="text-[10px] font-semibold text-zinc-300 flex items-center gap-1.5 uppercase tracking-wider">
                     <Calendar className="w-3 h-3 text-zinc-400" strokeWidth={1.5} />
                     Scheduled Move Date
                   </label>
                   <input
+                    id="move-date"
                     type="date"
                     min={todayStr}
                     value={moveDate}
@@ -393,7 +396,7 @@ export function ConversionCard({
                     }}
                     className={`w-full bg-[#090A0C] border ${
                       errors.moveDate ? 'border-[#EF4444]' : 'border-[#1F242F]'
-                    } rounded-md px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500`}
+                    } rounded-md px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-zinc-400 focus:border-zinc-400`}
                   />
                   {errors.moveDate && (
                     <p className="text-[10px] text-[#EF4444]">{errors.moveDate}</p>
@@ -402,11 +405,12 @@ export function ConversionCard({
 
                 {/* Email Address */}
                 <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-zinc-400 flex items-center gap-1.5 uppercase tracking-wider">
+                  <label htmlFor="lead-email" className="text-[10px] font-semibold text-zinc-300 flex items-center gap-1.5 uppercase tracking-wider">
                     <Mail className="w-3 h-3 text-zinc-400" strokeWidth={1.5} />
                     Contact Email Address
                   </label>
                   <input
+                    id="lead-email"
                     type="email"
                     value={email}
                     onChange={(e) => {
@@ -416,7 +420,7 @@ export function ConversionCard({
                     placeholder="name@company.com"
                     className={`w-full bg-[#090A0C] border ${
                       errors.email ? 'border-[#EF4444]' : 'border-[#1F242F]'
-                    } rounded-md px-3 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500`}
+                    } rounded-md px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-400 focus:border-zinc-400`}
                   />
                   {errors.email && (
                     <p className="text-[10px] text-[#EF4444]">{errors.email}</p>
@@ -424,7 +428,7 @@ export function ConversionCard({
                 </div>
 
                 {/* Micro-copy */}
-                <p className="text-[10px] text-zinc-500 leading-tight">
+                <p className="text-[10px] text-zinc-400 leading-tight">
                   We send your load manifest and verified carrier rates directly to your inbox.
                 </p>
               </div>
@@ -435,7 +439,7 @@ export function ConversionCard({
               <button
                 type="submit"
                 disabled={isCalculatingRoute}
-                className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-md bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-semibold tracking-wider uppercase transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-md bg-[#FF5500] hover:bg-[#E04B00] text-black font-bold text-xs tracking-wider uppercase transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-sm"
               >
                 {isCalculatingRoute ? (
                   <>
@@ -453,7 +457,7 @@ export function ConversionCard({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-md bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-semibold tracking-wider uppercase transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-md bg-[#FF5500] hover:bg-[#E04B00] text-black font-bold text-xs tracking-wider uppercase transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-sm"
               >
                 {isSubmitting ? (
                   <>

@@ -50,10 +50,11 @@ export function Header({
                 key={pid}
                 type="button"
                 onClick={() => onSelectPreset(pid)}
-                className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                aria-label={`Select ${p.label} dwelling preset`}
+                className={`px-2.5 sm:px-3 py-1 rounded-md text-xs transition-all ${
                   isActive
-                    ? 'bg-[#FF5500] text-white font-semibold shadow-sm'
-                    : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                    ? 'bg-[#FF5500] text-black font-bold shadow-sm'
+                    : 'text-zinc-300 hover:text-white hover:bg-white/10'
                 }`}
               >
                 {p.label}
@@ -72,10 +73,11 @@ export function Header({
                 key={tid}
                 type="button"
                 onClick={() => onSelectTruckId(tid)}
-                className={`px-2 sm:px-2.5 py-1 rounded-md text-xs font-medium font-mono tabular-nums transition-all ${
+                aria-label={`Select ${trk.name}`}
+                className={`px-2 sm:px-2.5 py-1 rounded-md text-xs font-mono tabular-nums transition-all ${
                   isSelected
-                    ? 'bg-[#0066FF] text-white font-semibold shadow-sm'
-                    : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                    ? 'bg-[#0066FF] text-white font-bold shadow-sm'
+                    : 'text-zinc-300 hover:text-white hover:bg-white/10'
                 }`}
               >
                 {trk.name.split(' ')[0]}
@@ -93,6 +95,7 @@ export function Header({
           onClick={onToggleUnitSystem}
           className="px-2.5 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-mono text-zinc-300 hover:text-white transition-colors"
           title={`Switch to ${unitSystem === 'imperial' ? 'metric' : 'imperial'} units`}
+          aria-label={`Switch to ${unitSystem === 'imperial' ? 'metric' : 'imperial'} units`}
         >
           {unitSystem === 'imperial' ? 'Imperial' : 'Metric'}
         </button>
@@ -101,8 +104,9 @@ export function Header({
         <button
           type="button"
           onClick={onReset}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-xs font-medium text-zinc-300 hover:text-white transition-colors"
           title="Clear all inventory and reset to defaults"
+          aria-label="Clear all inventory and reset to defaults"
         >
           <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
           <span className="hidden sm:inline">Clear All</span>
@@ -113,8 +117,9 @@ export function Header({
           <button
             type="button"
             onClick={onOpenNav}
-            className="p-1.5 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-zinc-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-md bg-[#090A0C] border border-[#1F242F] hover:border-zinc-500 text-zinc-300 hover:text-white transition-colors"
             title="Open Site Directory"
+            aria-label="Open Site Directory"
           >
             <Menu className="w-4 h-4" strokeWidth={1.5} />
           </button>

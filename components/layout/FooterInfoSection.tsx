@@ -66,7 +66,7 @@ export function FooterInfoSection() {
                             {trk.attic.length}″ × {trk.attic.width}″ × {trk.attic.height}″
                           </span>
                         ) : (
-                          <span className="text-zinc-600 text-xs">None</span>
+                          <span className="text-zinc-400 text-xs font-mono">None</span>
                         )}
                       </td>
                     </tr>
@@ -143,19 +143,19 @@ export function FooterInfoSection() {
             <strong>Notice:</strong> All calculations, spatial models, and box counts are mathematical estimates based on standard furniture dimensions and professional loading practices. Vehicle specifications reflect standard US rental fleets (U-Haul, Budget, Penske). When between truck sizes, rental providers always recommend reserving the larger vehicle.
           </p>
 
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-[#1F242F] text-[11px] text-zinc-500">
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-[#1F242F] text-xs text-zinc-400">
             <div className="flex items-center gap-4">
-              <Link href="/how-we-calculate" className="hover:text-zinc-300 transition-colors">
+              <Link href="/how-we-calculate" className="text-zinc-300 hover:text-white transition-colors underline-offset-2 hover:underline">
                 How We Calculate
               </Link>
-              <Link href="/privacy" className="hover:text-zinc-300 transition-colors">
+              <Link href="/privacy" className="text-zinc-300 hover:text-white transition-colors underline-offset-2 hover:underline">
                 Privacy Policy
               </Link>
-              <Link href="/terms" className="hover:text-zinc-300 transition-colors">
+              <Link href="/terms" className="text-zinc-300 hover:text-white transition-colors underline-offset-2 hover:underline">
                 Terms of Service
               </Link>
             </div>
-            <div>
+            <div className="text-zinc-400">
               © {new Date().getFullYear()} TruckSizer. All rights reserved.
             </div>
           </div>

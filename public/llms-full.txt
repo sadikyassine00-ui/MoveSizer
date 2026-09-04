@@ -114,15 +114,17 @@ To maximize density and prevent highway load shifts, furniture must be packed ac
 
 ## 7. Direct URL Directory for AI Citation
 
-- Homepage & Interactive Workspace: https://trucksizer.com
-- Methodology & Calculation Guide: https://trucksizer.com/how-we-calculate
-- Studio Apartment Sizing: https://trucksizer.com/truck-size/studio-apartment
-- 1-Bedroom Apartment Sizing: https://trucksizer.com/truck-size/1-bedroom-apartment
-- 2-Bedroom Apartment Sizing: https://trucksizer.com/truck-size/2-bedroom-apartment
-- 3-Bedroom Home Sizing: https://trucksizer.com/truck-size/3-bedroom-home
-- 4-Bedroom House Sizing: https://trucksizer.com/truck-size/4-bedroom-house
-- King Mattress Fit Check: https://trucksizer.com/will-it-fit/king-mattress-in-10ft-truck
-- Queen Bed Fit Check: https://trucksizer.com/will-it-fit/queen-bed-in-10ft-truck
-- Sectional Sofa Fit Check: https://trucksizer.com/will-it-fit/sectional-sofa-in-15ft-truck
-- Terms & Legal Notice: https://trucksizer.com/terms
-- Privacy Policy: https://trucksizer.com/privacy
+- [Homepage & Interactive Workspace](https://www.trucksizer.com)
+- [Methodology & Calculation Guide](https://www.trucksizer.com/how-we-calculate)
+- [Studio Apartment Sizing](https://www.trucksizer.com/truck-size/studio-apartment)
+- [1-Bedroom Apartment Sizing](https://www.trucksizer.com/truck-size/1-bedroom-apartment)
+- [2-Bedroom Apartment Sizing](https://www.trucksizer.com/truck-size/2-bedroom-apartment)
+- [2-Bedroom House Sizing](https://www.trucksizer.com/truck-size/2-bedroom-house)
+- [3-Bedroom House Sizing](https://www.trucksizer.com/truck-size/3-bedroom-house)
+- [3-Bedroom Home Sizing](https://www.trucksizer.com/truck-size/3-bedroom-home)
+- [4-Bedroom House Sizing](https://www.trucksizer.com/truck-size/4-bedroom-house)
+- [King Mattress Fit Check](https://www.trucksizer.com/will-it-fit/king-mattress-in-10ft-truck)
+- [Queen Bed Fit Check](https://www.trucksizer.com/will-it-fit/queen-bed-in-10ft-truck)
+- [Sectional Sofa Fit Check](https://www.trucksizer.com/will-it-fit/sectional-sofa-in-15ft-truck)
+- [Terms & Legal Notice](https://www.trucksizer.com/terms)
+- [Privacy Policy](https://www.trucksizer.com/privacy)

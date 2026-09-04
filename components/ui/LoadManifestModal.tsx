@@ -471,6 +471,7 @@ export function LoadManifestModal({
               onClick={onClose}
               className="p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-[#1F242F] transition-colors"
               title="Close modal"
+              aria-label="Close modal"
             >
               <X className="w-4 h-4" strokeWidth={1.5} />
             </button>
