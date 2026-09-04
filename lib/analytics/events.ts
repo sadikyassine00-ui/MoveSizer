@@ -1,5 +1,7 @@
 'use client';
 
+import Clarity from '@microsoft/clarity';
+
 export type FunnelEvent =
   | 'preset_selected'
   | 'capacity_threshold_crossed'
@@ -95,9 +97,9 @@ export function trackEvent<E extends FunnelEvent>(
       });
     }
 
-    // 3. Microsoft Clarity Event Dispatch
-    if (typeof window.clarity === 'function') {
-      window.clarity('event', eventName);
+    // 3. Microsoft Clarity Event Dispatch via official SDK
+    if (typeof window !== 'undefined' && typeof window.clarity === 'function') {
+      Clarity.event(eventName);
     }
 
     // 4. Debug Logger in non-production
