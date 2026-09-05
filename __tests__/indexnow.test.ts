@@ -21,15 +21,28 @@ describe('IndexNow Protocol Engine', () => {
     expect(getIndexNowHost('https://sub.domain.org/path')).toBe('sub.domain.org');
   });
 
-  it('gathers all programmatic and static URLs (21 total)', () => {
+  it('gathers all programmatic and static URLs (including Clusters A, B, C, D)', () => {
     const urls = getAllSiteUrls('https://www.trucksizer.com');
-    expect(urls.length).toBe(21);
+    expect(urls.length).toBe(37);
 
     // Static pages
     expect(urls).toContain('https://www.trucksizer.com');
     expect(urls).toContain('https://www.trucksizer.com/how-we-calculate');
     expect(urls).toContain('https://www.trucksizer.com/privacy');
     expect(urls).toContain('https://www.trucksizer.com/terms');
+
+    // Cluster A & B: Dimension and Brand Specs
+    expect(urls).toContain('https://www.trucksizer.com/dimensions/box-truck');
+    expect(urls).toContain('https://www.trucksizer.com/dimensions/15ft-truck');
+    expect(urls).toContain('https://www.trucksizer.com/dimensions/15ft-uhaul-specs');
+
+    // Cluster C: How-To-Pack
+    expect(urls).toContain('https://www.trucksizer.com/how-to-pack/moving-truck');
+    expect(urls).toContain('https://www.trucksizer.com/how-to-pack/furniture-loading');
+
+    // Cluster D: Comparisons
+    expect(urls).toContain('https://www.trucksizer.com/compare/10ft-vs-15ft');
+    expect(urls).toContain('https://www.trucksizer.com/compare/15ft-truck-brands');
 
     // Dwelling routes
     expect(urls).toContain('https://www.trucksizer.com/truck-size/studio-apartment');

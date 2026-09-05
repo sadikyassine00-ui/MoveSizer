@@ -1,5 +1,8 @@
 import { MetadataRoute } from 'next';
 import { getAllDwellingSlugs } from '@/lib/seo/dwellings';
+import { getCanonicalDimensionSlugs } from '@/lib/seo/dimensions';
+import { getAllHowToPackSlugs } from '@/lib/seo/howToPack';
+import { getCanonicalComparisonSlugs } from '@/lib/seo/comparisons';
 
 const KNOWN_FIT_SLUGS = [
   'king-mattress-in-10ft-truck',
@@ -20,7 +23,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
-      lastModified: new Date('2026-09-03T18:00:00Z'),
+      lastModified: new Date('2026-09-05T18:00:00Z'),
       changeFrequency: 'daily',
       priority: 1.0,
     },
@@ -44,15 +47,37 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
+  // Cluster A & B: Dimension and Fleet Specs (priority 0.85)
+  const dimensionPages: MetadataRoute.Sitemap = getCanonicalDimensionSlugs().map((slug, idx) => ({
+    url: `${baseUrl}/dimensions/${slug}`,
+    lastModified: new Date(Date.UTC(2026, 8, 1 + (idx % 4))),
+    changeFrequency: 'weekly',
+    priority: 0.85,
+  }));
+
+  // Cluster C: Master How-To-Pack Guides (priority 0.85)
+  const howToPackPages: MetadataRoute.Sitemap = getAllHowToPackSlugs().map((slug, idx) => ({
+    url: `${baseUrl}/how-to-pack/${slug}`,
+    lastModified: new Date(Date.UTC(2026, 8, 2 + idx)),
+    changeFrequency: 'weekly',
+    priority: 0.85,
+  }));
+
+  // Cluster D: Decision-Stage Size & Fleet Comparisons (priority 0.85)
+  const comparisonPages: MetadataRoute.Sitemap = getCanonicalComparisonSlugs().map((slug, idx) => ({
+    url: `${baseUrl}/compare/${slug}`,
+    lastModified: new Date(Date.UTC(2026, 8, 3 + idx)),
+    changeFrequency: 'weekly',
+    priority: 0.85,
+  }));
+
   // Dwelling guides: priority 0.8
-  const dwellingPages: MetadataRoute.Sitemap = getAllDwellingSlugs().map(
-    (dwelling, idx) => ({
-      url: `${baseUrl}/truck-size/${dwelling}`,
-      lastModified: new Date(Date.UTC(2026, 8, 1 + (idx % 3))),
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    })
-  );
+  const dwellingPages: MetadataRoute.Sitemap = getAllDwellingSlugs().map((dwelling, idx) => ({
+    url: `${baseUrl}/truck-size/${dwelling}`,
+    lastModified: new Date(Date.UTC(2026, 8, 1 + (idx % 3))),
+    changeFrequency: 'weekly',
+    priority: 0.8,
+  }));
 
   // Single item fit guides: priority 0.75
   const fitPages: MetadataRoute.Sitemap = KNOWN_FIT_SLUGS.map((slug, idx) => ({
@@ -62,5 +87,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.75,
   }));
 
-  return [...staticPages, ...dwellingPages, ...fitPages];
+  return [
+    ...staticPages,
+    ...dimensionPages,
+    ...howToPackPages,
+    ...comparisonPages,
+    ...dwellingPages,
+    ...fitPages,
+  ];
 }

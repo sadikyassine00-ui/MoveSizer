@@ -50,10 +50,16 @@ export function CapacityGauge({
   // - Critical (>85% fill, or unpacked items when tight/overfilled, or overweight)
   // - Caution (71% - 85% fill, or any unpacked items)
   // - Optimal (0% - 70% fill AND all items packed)
+  // Strict Warning Suppression (<75% Capacity):
+  // If the truck is under 75% full (and no physical unpacked items and not overweight),
+  // maintain a confident green badge: 'Comfortable Fit • Extra Clearance Available'
+  // and completely suppress upgrade messages.
+  const isComfortableFit = fillPercentage < 75 && unpackedCount === 0 && !isOverweight;
+
   const effectiveStatus: 'optimal' | 'caution' | 'critical' =
-    status === 'critical' || fillPercentage > 85 || isOverweight || (unpackedCount > 0 && fillPercentage > 70)
+    isOverweight || fillPercentage > 85 || (unpackedCount > 0 && fillPercentage >= 75)
       ? 'critical'
-      : status === 'caution' || fillPercentage > 70 || unpackedCount > 0
+      : !isComfortableFit
       ? 'caution'
       : 'optimal';
 
@@ -63,7 +69,7 @@ export function CapacityGauge({
       textColor: 'text-[#10B981]',
       borderColor: 'border-[#10B981]/30',
       badgeBg: 'bg-[#10B981]/15',
-      label: `Optimal Fit • ${fillPercentage}% Full`,
+      label: 'Comfortable Fit • Extra Clearance Available',
       icon: CheckCircle2,
     },
     caution: {

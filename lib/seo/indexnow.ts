@@ -1,4 +1,7 @@
 import { DWELLING_SLUG_MAP } from '@/lib/constants/presets';
+import { getCanonicalDimensionSlugs } from '@/lib/seo/dimensions';
+import { getAllHowToPackSlugs } from '@/lib/seo/howToPack';
+import { getCanonicalComparisonSlugs } from '@/lib/seo/comparisons';
 
 export const DEFAULT_INDEXNOW_KEY = '7d5b128532f64ab896e30bca238a8e52';
 
@@ -39,6 +42,18 @@ export function getAllSiteUrls(baseUrl?: string): string[] {
     `${siteUrl}/terms`,
   ];
 
+  const dimensionUrls = getCanonicalDimensionSlugs().map(
+    (slug) => `${siteUrl}/dimensions/${slug}`
+  );
+
+  const howToPackUrls = getAllHowToPackSlugs().map(
+    (slug) => `${siteUrl}/how-to-pack/${slug}`
+  );
+
+  const comparisonUrls = getCanonicalComparisonSlugs().map(
+    (slug) => `${siteUrl}/compare/${slug}`
+  );
+
   const dwellingUrls = Object.keys(DWELLING_SLUG_MAP).map(
     (slug) => `${siteUrl}/truck-size/${slug}`
   );
@@ -47,7 +62,14 @@ export function getAllSiteUrls(baseUrl?: string): string[] {
     (slug) => `${siteUrl}/will-it-fit/${slug}`
   );
 
-  return [...staticUrls, ...dwellingUrls, ...fitUrls];
+  return [
+    ...staticUrls,
+    ...dimensionUrls,
+    ...howToPackUrls,
+    ...comparisonUrls,
+    ...dwellingUrls,
+    ...fitUrls,
+  ];
 }
 
 export interface IndexNowPayload {

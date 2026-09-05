@@ -12,7 +12,10 @@ export type FunnelEvent =
   | 'dwelling_selected'
   | 'lead_submitted'
   | 'manifest_downloaded'
-  | 'affiliate_click';
+  | 'affiliate_click'
+  | 'moving_labor_searched'
+  | 'rental_savings_clicked'
+  | 'box_kit_amazon_clicked';
 
 export interface EventPayloads {
   preset_selected: {
@@ -70,6 +73,21 @@ export interface EventPayloads {
     partner_name: string;
     placement: string;
     url?: string;
+  };
+  moving_labor_searched: {
+    zip: string;
+    helpers: number;
+    hours: number;
+    truck_label: string;
+    estimated_cost: number;
+  };
+  rental_savings_clicked: {
+    competitor_brand: string;
+    truck_size: string;
+  };
+  box_kit_amazon_clicked: {
+    total_boxes: number;
+    dwelling: string;
   };
 }
 
