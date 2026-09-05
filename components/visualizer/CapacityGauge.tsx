@@ -8,12 +8,14 @@ import { trackCapacityThresholdCrossed, trackSizeUpClicked } from '@/lib/analyti
 
 interface CapacityGaugeProps {
   capacityResult: CapacityCalculationResult;
+  unpackedCount?: number;
   onUpgradeTruck?: (nextTruckId: TruckId) => void;
   className?: string;
 }
 
 export function CapacityGauge({
   capacityResult,
+  unpackedCount = 0,
   onUpgradeTruck,
   className = '',
 }: CapacityGaugeProps) {
@@ -30,6 +32,11 @@ export function CapacityGauge({
     needsUpgrade,
   } = capacityResult;
 
+  const volumeUtilization = capacityResult.volumeUtilization ?? (
+    usableCapacityCuFt > 0 ? totalVolumeCuFt / usableCapacityCuFt : 0
+  );
+  const isVolumetricFit = volumeUtilization <= 1.0;
+
   const prevStatusRef = useRef(status);
 
   useEffect(() => {
@@ -39,13 +46,24 @@ export function CapacityGauge({
     prevStatusRef.current = status;
   }, [status, fillPercentage, capacityResult.truck.id]);
 
+  // Status strictly adheres to capacity spec and physical reality:
+  // - Critical (>85% fill, or unpacked items when tight/overfilled, or overweight)
+  // - Caution (71% - 85% fill, or any unpacked items)
+  // - Optimal (0% - 70% fill AND all items packed)
+  const effectiveStatus: 'optimal' | 'caution' | 'critical' =
+    status === 'critical' || fillPercentage > 85 || isOverweight || (unpackedCount > 0 && fillPercentage > 70)
+      ? 'critical'
+      : status === 'caution' || fillPercentage > 70 || unpackedCount > 0
+      ? 'caution'
+      : 'optimal';
+
   const statusConfig = {
     optimal: {
       barColor: 'bg-[#10B981]',
       textColor: 'text-[#10B981]',
       borderColor: 'border-[#10B981]/30',
       badgeBg: 'bg-[#10B981]/15',
-      label: 'Optimal Fit',
+      label: `Optimal Fit • ${fillPercentage}% Full`,
       icon: CheckCircle2,
     },
     caution: {
@@ -53,7 +71,7 @@ export function CapacityGauge({
       textColor: 'text-[#F59E0B]',
       borderColor: 'border-[#F59E0B]/30',
       badgeBg: 'bg-[#F59E0B]/15',
-      label: 'Tight Fit',
+      label: unpackedCount > 0 ? `Tight Fit • ${unpackedCount} Exceeded` : `Tight Fit • ${fillPercentage}% Full`,
       icon: AlertTriangle,
     },
     critical: {
@@ -61,10 +79,10 @@ export function CapacityGauge({
       textColor: 'text-[#EF4444]',
       borderColor: 'border-[#EF4444]/30',
       badgeBg: 'bg-[#EF4444]/15',
-      label: 'Critical Capacity',
+      label: unpackedCount > 0 ? `Exceeds Capacity • ${unpackedCount} Exceeded` : `Over Capacity • ${fillPercentage}% Full`,
       icon: AlertTriangle,
     },
-  }[status];
+  }[effectiveStatus];
 
   const StatusIcon = statusConfig.icon;
   const clampedProgress = Math.min(100, Math.max(0, fillPercentage));
@@ -165,13 +183,35 @@ export function CapacityGauge({
         </div>
       </div>
 
-      {/* Dynamic Size-Up CTA Banner */}
-      {needsUpgrade && nextTruck && onUpgradeTruck && (
+      {/* Physical packing notice when items cannot fit into the truck */}
+      {unpackedCount > 0 && (
+        <div className="mt-1 flex items-center gap-2 p-2.5 rounded-md bg-[#16100C] border border-amber-500/40 text-xs text-zinc-300">
+          <AlertTriangle className="w-4 h-4 text-[#F59E0B] shrink-0" strokeWidth={1.75} />
+          <p className="text-[11px] text-zinc-300 leading-snug">
+            <strong className="text-amber-400 font-semibold">{unpackedCount} item{unpackedCount > 1 ? 's' : ''} cannot fit</strong> in this vehicle&apos;s physical cargo dimensions. Upgrade recommended.
+          </p>
+        </div>
+      )}
+
+      {/* Dynamic Size-Up CTA Banner: Trigger when tight/critical (>= 71%) or unpacked items or overweight */}
+      {(effectiveStatus !== 'optimal' || isOverweight || unpackedCount > 0) && nextTruck && onUpgradeTruck && (
         <div className="mt-1 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-md bg-[#16100C] border border-[#FF5500]/40">
           <div className="flex items-center gap-2.5">
             <AlertTriangle className="w-4 h-4 text-[#FF5500] shrink-0" strokeWidth={1.5} />
             <p className="text-xs text-zinc-200">
-              Space is tight. Upgrade to <strong className="text-white font-semibold">{nextTruck.name}</strong> to prevent moving-day overflow.
+              {unpackedCount > 0 ? (
+                <>
+                  Cargo exceeds usable space (<strong className="text-white font-semibold">{unpackedCount} item{unpackedCount > 1 ? 's' : ''} unpacked</strong>). Upgrade to <strong className="text-white font-semibold">{nextTruck.name}</strong> to fit your entire move.
+                </>
+              ) : effectiveStatus === 'critical' ? (
+                <>
+                  Cargo exceeds safe capacity threshold ({fillPercentage}% full). Upgrade to <strong className="text-white font-semibold">{nextTruck.name}</strong> to prevent moving-day overflow.
+                </>
+              ) : (
+                <>
+                  Space is tight ({fillPercentage}% full). Upgrade to <strong className="text-white font-semibold">{nextTruck.name}</strong> to prevent moving-day overflow.
+                </>
+              )}
             </p>
           </div>
 

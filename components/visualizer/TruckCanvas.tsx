@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { TruckSpec } from '@/lib/constants/trucks';
 import { DrawableBlock, sortBlocksTopological } from '@/lib/engine/packEngine';
-import { ZoomIn, ZoomOut, RotateCcw, Move } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Move, X } from 'lucide-react';
 
 interface TruckCanvasProps {
   truck: TruckSpec;
@@ -102,6 +102,12 @@ export function TruckCanvas({
   useEffect(() => {
     panOffsetRef.current = panOffset;
   }, [panOffset]);
+
+  // Active selected block details
+  const selectedBlock = useMemo(() => {
+    if (!selectedBlockId) return null;
+    return blocks.find((b) => b.id === selectedBlockId) || null;
+  }, [blocks, selectedBlockId]);
 
   // Block hover state
   const [hoveredBlock, setHoveredBlock] = useState<DrawableBlock | null>(null);
@@ -817,30 +823,6 @@ export function TruckCanvas({
         ctx.moveTo(v6.x, v6.y);
         ctx.lineTo(v2.x, v2.y);
         ctx.stroke();
-        ctx.restore();
-      }
-
-      // Block Monospace/Sans Label
-      const topCenterX = (v4.x + v5.x + v6.x + v7.x) / 4;
-      const topCenterY = (v4.y + v5.y + v6.y + v7.y) / 4;
-
-      const projectedWidth = Math.abs(v6.x - v4.x);
-      if (projectedWidth > 26) {
-        ctx.save();
-        const fontSize = Math.max(9, Math.min(12, Math.floor(projectedWidth / 7.5)));
-        ctx.font = `600 ${fontSize}px var(--font-sans), sans-serif`;
-        ctx.fillStyle = '#FFFFFF';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
-        ctx.shadowBlur = 3;
-
-        let displayLabel = b.label;
-        if (displayLabel.length > 12 && projectedWidth < 80) {
-          displayLabel = displayLabel.slice(0, 10) + '..';
-        }
-
-        ctx.fillText(displayLabel, topCenterX, topCenterY);
         ctx.restore();
       }
     }
@@ -1566,8 +1548,55 @@ export function TruckCanvas({
         </div>
       </div>
 
+      {/* Docked Item Inspector Info Panel on Click */}
+      {selectedBlock && (
+        <div className="absolute top-2.5 right-2.5 sm:top-4 sm:right-4 z-30 flex flex-col p-3 rounded-lg bg-[#111318]/95 border border-[#0066FF] backdrop-blur-md shadow-2xl text-xs text-white max-w-[270px] animate-in fade-in zoom-in-95 duration-150 select-text">
+          <div className="flex items-start justify-between gap-2 border-b border-[#1F242F] pb-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="w-2 h-2 rounded-full bg-[#0066FF] shrink-0" />
+                <span className="font-semibold text-sm text-[#F8F9FA] truncate block">
+                  {selectedBlock.label}
+                </span>
+              </div>
+              <span className="text-[10px] text-zinc-400 font-mono">
+                {selectedBlock.isAttic ? "Mom's Attic Stowed" : selectedBlock.category.replace('_', ' ')}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => onSelectBlock?.(null)}
+              className="text-zinc-400 hover:text-white p-1 rounded hover:bg-[#1F242F] transition-colors shrink-0"
+              aria-label="Close item inspector"
+              title="Close inspector"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-zinc-300 text-[11px] pt-2">
+            <div>
+              <span className="text-zinc-500 text-[10px] uppercase font-mono block">Dimensions</span>
+              <span className="tabular-nums font-mono text-zinc-200">{selectedBlock.dimensionsText}</span>
+            </div>
+            <div>
+              <span className="text-zinc-500 text-[10px] uppercase font-mono block">Volume</span>
+              <span className="tabular-nums font-mono text-[#0066FF] font-semibold">{selectedBlock.volumeCuFt} cu ft</span>
+            </div>
+            <div>
+              <span className="text-zinc-500 text-[10px] uppercase font-mono block">Weight</span>
+              <span className="tabular-nums font-mono text-zinc-200">~{selectedBlock.weightLbs} lbs</span>
+            </div>
+            <div>
+              <span className="text-zinc-500 text-[10px] uppercase font-mono block">Position</span>
+              <span className="tabular-nums font-mono text-zinc-400 text-[10px]">[{selectedBlock.x}″, {selectedBlock.y}″, {selectedBlock.z}″]</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Dimensional Tooltip HUD */}
-      {hoveredBlock && mousePos && !isDragging && (
+      {hoveredBlock && mousePos && !isDragging && (!selectedBlock || selectedBlock.id !== hoveredBlock.id) && (
         <div
           className="absolute pointer-events-none z-30 px-3 py-2 bg-[#111318]/95 border border-[#0066FF] backdrop-blur-md rounded-md text-xs font-sans transition-transform duration-75 text-white"
           style={{

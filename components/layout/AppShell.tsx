@@ -15,7 +15,7 @@ import { LoadManifestModal } from '@/components/ui/LoadManifestModal';
 import { FooterInfoSection } from '@/components/layout/FooterInfoSection';
 import { NavDrawer } from '@/components/layout/NavDrawer';
 import { trackPresetSelected, trackDwellingSelected } from '@/lib/analytics/events';
-import { Layers, FileText, ChevronUp, ChevronDown, X, ArrowRight } from 'lucide-react';
+import { Layers, FileText, ChevronUp, ChevronDown, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 interface AppShellProps {
   initialPreset?: PresetId;
@@ -61,6 +61,7 @@ export function AppShell({
   // Modal & Drawer states
   const [isNavDrawerOpen, setIsNavDrawerOpen] = useState(false);
   const [isManifestOpen, setIsManifestOpen] = useState(false);
+
   const [manifestData, setManifestData] = useState<{
     leadId: string;
     originZip: string;
@@ -177,8 +178,30 @@ export function AppShell({
   }, [currentTruck, inventory, customItems]);
 
   const capacityResult = useMemo(() => {
-    return calculateCapacity(currentTruck, inventory);
-  }, [currentTruck, inventory]);
+    let customVol = 0;
+    let customWt = 0;
+    for (const c of customItems) {
+      const vol = (c.length * c.width * c.height) / 1728;
+      customVol += vol * c.quantity;
+      customWt += (c.weightLbs ?? Math.round(vol * 8)) * c.quantity;
+    }
+    const baseCap = calculateCapacity(currentTruck, inventory);
+    if (customItems.length === 0) return baseCap;
+    return calculateCapacity(currentTruck, {
+      totalVolumeCuFt: baseCap.totalVolumeCuFt + customVol,
+      totalWeightLbs: baseCap.totalWeightLbs + customWt,
+    });
+  }, [currentTruck, inventory, customItems]);
+
+  const volumeUtilization = useMemo(() => {
+    return capacityResult.volumeUtilization ?? (
+      capacityResult.usableCapacityCuFt > 0
+        ? capacityResult.totalVolumeCuFt / capacityResult.usableCapacityCuFt
+        : 0
+    );
+  }, [capacityResult]);
+
+  const isVolumetricFit = volumeUtilization <= 1.0;
 
   const handleOpenManifestWithInfo = (info: {
     leadId: string;
@@ -196,8 +219,6 @@ export function AppShell({
       <Header
         selectedTruckId={selectedTruckId}
         onSelectTruckId={setSelectedTruckId}
-        selectedPreset={selectedPreset}
-        onSelectPreset={handleSelectPreset}
         unitSystem={unitSystem}
         onToggleUnitSystem={() =>
           setUnitSystem((prev) => (prev === 'imperial' ? 'metric' : 'imperial'))
@@ -230,7 +251,7 @@ export function AppShell({
           />
         </div>
 
-        {/* Center Column (Flex-1): Canvas + Floating Summary Capsule */}
+        {/* Center Column (Flex-1): Panoramic 3D Canvas + Capacity HUD */}
         <main className="flex-1 flex flex-col h-full overflow-hidden bg-[#090A0C] relative">
           <div className="flex-1 relative w-full h-full min-h-[360px]">
             <TruckCanvas
@@ -241,12 +262,13 @@ export function AppShell({
             />
 
             {packResult.unpackedItems.length > 0 && (
-              <div className="absolute bottom-4 left-4 z-20 max-w-xs p-3 rounded-md bg-[#EF4444]/15 border border-[#EF4444]/50 backdrop-blur-md text-xs text-white">
-                <div className="font-semibold text-[#EF4444] mb-1">
-                  {packResult.unpackedItems.length} items exceed capacity
+              <div className="absolute bottom-4 left-4 z-20 max-w-sm p-3 rounded-md bg-[#16100C]/95 border border-[#F59E0B]/50 backdrop-blur-md text-xs text-white shadow-xl">
+                <div className="flex items-center gap-1.5 font-semibold text-[#F59E0B] mb-1">
+                  <AlertTriangle className="w-4 h-4 text-[#F59E0B] shrink-0" strokeWidth={1.75} />
+                  <span>{packResult.unpackedItems.length} Item{packResult.unpackedItems.length > 1 ? 's' : ''} Could Not Fit</span>
                 </div>
-                <p className="text-[11px] text-zinc-300">
-                  Remaining items cannot fit inside interior boundaries. Upgrade truck size.
+                <p className="text-[11px] text-zinc-300 leading-relaxed">
+                  Cargo exceeds truck cargo bounds. Upgrade to a larger truck size to ensure all items fit.
                 </p>
               </div>
             )}
@@ -256,13 +278,14 @@ export function AppShell({
           <div className="p-3.5 bg-[#090A0C]/95 backdrop-blur border-t border-[#1F242F] shrink-0 z-10">
             <CapacityGauge
               capacityResult={capacityResult}
+              unpackedCount={packResult.unpackedItems.length}
               onUpgradeTruck={(nextId) => setSelectedTruckId(nextId)}
             />
           </div>
         </main>
 
-        {/* Right Column (340px): 2-Step Micro-Commitment Conversion Card (Inline) */}
-        <div className="w-[340px] shrink-0 h-full overflow-hidden border-l border-[#1F242F] z-10">
+        {/* Right Column (320px / w-80): Move Summary & Rates Rail */}
+        <aside className="w-80 shrink-0 h-full overflow-hidden bg-neutral-900 border-l border-neutral-800 z-10 hidden lg:flex flex-col">
           <ConversionCard
             truck={currentTruck}
             capacityResult={capacityResult}
@@ -271,7 +294,7 @@ export function AppShell({
             dwellingType={selectedPreset || 'custom'}
             onOpenManifest={handleOpenManifestWithInfo}
           />
-        </div>
+        </aside>
       </div>
 
       {/* ================================================================= */}
@@ -356,6 +379,7 @@ export function AppShell({
                   <div className="p-3 bg-[#090A0C] border-b border-[#1F242F]">
                     <CapacityGauge
                       capacityResult={capacityResult}
+                      unpackedCount={packResult.unpackedItems.length}
                       onUpgradeTruck={(nextId) => setSelectedTruckId(nextId)}
                     />
                   </div>

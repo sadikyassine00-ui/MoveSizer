@@ -2,14 +2,11 @@
 
 import React from 'react';
 import { TRUCKS, TRUCK_ORDER, TruckId } from '@/lib/constants/trucks';
-import { PRESETS, PresetId } from '@/lib/constants/presets';
 import { Truck, RotateCcw, Menu } from 'lucide-react';
 
 interface HeaderProps {
   selectedTruckId: TruckId;
   onSelectTruckId: (id: TruckId) => void;
-  selectedPreset: PresetId | null;
-  onSelectPreset: (presetId: PresetId) => void;
   unitSystem: 'imperial' | 'metric';
   onToggleUnitSystem: () => void;
   onReset: () => void;
@@ -19,8 +16,6 @@ interface HeaderProps {
 export function Header({
   selectedTruckId,
   onSelectTruckId,
-  selectedPreset,
-  onSelectPreset,
   unitSystem,
   onToggleUnitSystem,
   onReset,
@@ -38,33 +33,9 @@ export function Header({
         </span>
       </div>
 
-      {/* 2. Core Functional Controls: Presets & Truck Sizing */}
-      <div className="flex items-center gap-2">
-        {/* Dwelling Presets: [Studio] [1-2 Bed] [3+ Bed] */}
-        <div className="hidden min-[380px]:flex items-center gap-0.5 sm:gap-1 bg-[#090A0C] p-0.5 sm:p-1 rounded-lg border border-[#1F242F]">
-          {(['studio', '1-2_bed', '3+_bed'] as PresetId[]).map((pid) => {
-            const p = PRESETS[pid];
-            const isActive = selectedPreset === pid;
-            return (
-              <button
-                key={pid}
-                type="button"
-                onClick={() => onSelectPreset(pid)}
-                aria-label={`Select ${p.label} dwelling preset`}
-                className={`px-2 sm:px-3 py-1 rounded-md text-[11px] sm:text-xs transition-all ${
-                  isActive
-                    ? 'bg-[#FF5500] text-black font-bold shadow-sm'
-                    : 'text-zinc-300 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                {p.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Truck Fleet Size Selector */}
-        <div className="hidden sm:flex items-center gap-1 bg-[#090A0C] p-1 rounded-lg border border-[#1F242F]">
+      {/* 2. Core Functional Controls: Centered Truck Fleet Size Selector */}
+      <div className="flex items-center justify-center">
+        <div className="flex items-center gap-1 bg-[#090A0C] p-1 rounded-lg border border-[#1F242F]">
           {TRUCK_ORDER.map((tid) => {
             const trk = TRUCKS[tid];
             const isSelected = selectedTruckId === tid;
@@ -74,7 +45,7 @@ export function Header({
                 type="button"
                 onClick={() => onSelectTruckId(tid)}
                 aria-label={`Select ${trk.name}`}
-                className={`px-2 sm:px-2.5 py-1 rounded-md text-xs font-mono tabular-nums transition-all ${
+                className={`px-2.5 sm:px-3 py-1 rounded-md text-xs font-mono tabular-nums transition-all ${
                   isSelected
                     ? 'bg-[#0066FF] text-white font-bold shadow-sm'
                     : 'text-zinc-300 hover:text-white hover:bg-white/10'

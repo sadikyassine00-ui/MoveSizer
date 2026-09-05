@@ -14,6 +14,7 @@ export interface CapacityCalculationResult {
   totalVolumeCuFt: number;
   remainingCapacityCuFt: number;
   fillPercentage: number;
+  volumeUtilization: number;
   status: CapacityStatus;
   totalWeightLbs: number;
   maxPayloadLbs: number;
@@ -72,6 +73,9 @@ export function calculateCapacity(
   // Fill percentage calculation
   const rawFillPercentage = (totalVolumeCuFt / usableCapacityCuFt) * 100;
   const fillPercentage = Number(rawFillPercentage.toFixed(1));
+  const volumeUtilization = usableCapacityCuFt > 0
+    ? Number((totalVolumeCuFt / usableCapacityCuFt).toFixed(3))
+    : 0;
 
   const remainingCapacityCuFt = Number(Math.max(0, usableCapacityCuFt - totalVolumeCuFt).toFixed(1));
 
@@ -104,6 +108,7 @@ export function calculateCapacity(
     totalVolumeCuFt: Number(totalVolumeCuFt.toFixed(1)),
     remainingCapacityCuFt,
     fillPercentage,
+    volumeUtilization,
     status,
     totalWeightLbs: Math.round(totalWeightLbs),
     maxPayloadLbs: truck.maxPayloadLbs,

@@ -64,7 +64,7 @@ export const ITEMS: Record<string, ItemDefinition> = {
     volumeCuFt: 5.5,
     weightLbs: 35,
     zone: 'floor',
-    canStackOnTop: false,
+    canStackOnTop: true,
     color: '#A78BFA',
   },
 
@@ -99,7 +99,7 @@ export const ITEMS: Record<string, ItemDefinition> = {
     volumeCuFt: 12.0,
     weightLbs: 45,
     zone: 'floor',
-    canStackOnTop: false,
+    canStackOnTop: true,
     color: '#14B8A6',
   },
   tv_stand: {
@@ -110,7 +110,7 @@ export const ITEMS: Record<string, ItemDefinition> = {
     volumeCuFt: 12.5,
     weightLbs: 60,
     zone: 'floor',
-    canStackOnTop: false,
+    canStackOnTop: true,
     color: '#0D9488',
   },
 
@@ -197,7 +197,7 @@ export const ITEMS: Record<string, ItemDefinition> = {
     volumeCuFt: 16.0,
     weightLbs: 50,
     zone: 'attic',
-    canStackOnTop: false,
+    canStackOnTop: true,
     maxStackHeight: 1,
     color: '#854D0E',
     isBox: true,

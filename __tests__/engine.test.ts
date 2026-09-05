@@ -7,6 +7,9 @@ import {
   isBlockBehind,
   doScreenBoxesOverlap,
   getBlockScreenBox,
+  compactItems,
+  calculateLayoutScore,
+  isInsideCavity,
 } from '../lib/engine/packEngine';
 import { TRUCKS } from '../lib/constants/trucks';
 import { ITEMS } from '../lib/constants/items';
@@ -96,6 +99,34 @@ describe('Calculation and Packing Engines', () => {
       expect(result.fillPercentage).toBeLessThanOrEqual(70);
       expect(result.isOverweight).toBe(false);
     });
+
+    it('calculates scalar volume utilization ratio and confirms volumeUtilization <= 1.0 does not exceed usable capacity', () => {
+      const truck10ft = TRUCKS['10ft']; // 402 gross, 329.6 usable
+      // 2 Queen beds: ~111.2 cu ft
+      const result = calculateCapacity(truck10ft, {
+        queen_bed: 2,
+      });
+
+      expect(result.volumeUtilization).toBeLessThanOrEqual(1.0);
+      expect(result.status).toBe('optimal');
+      expect(result.needsUpgrade).toBe(false);
+    });
+
+    it('verifies Studio preset + 10 boxes in 10ft truck has volumeUtilization <= 0.75 and triggers 0 warnings', () => {
+      const truck10ft = TRUCKS['10ft'];
+      const inventory = {
+        ...PRESETS.studio.items,
+        box_medium: (PRESETS.studio.items.box_medium || 0) + 5,
+        box_small: (PRESETS.studio.items.box_small || 0) + 5,
+      };
+      const capResult = calculateCapacity(truck10ft, inventory);
+      expect(capResult.volumeUtilization).toBeLessThanOrEqual(0.75);
+      expect(capResult.isOverweight).toBe(false);
+
+      const packResult = packTruck(truck10ft, inventory);
+      expect(packResult.unpackedItems.length).toBe(0);
+      expect(packResult.blocks.length).toBe(41);
+    });
   });
 
   describe('Task 4: packEngine.ts', () => {
@@ -117,6 +148,45 @@ describe('Calculation and Packing Engines', () => {
       expect(kingBlock?.z).toBe(0); // Left wall
       expect(kingBlock?.width).toBe(20);
       expect(kingBlock?.height).toBe(76);
+    });
+
+    it('verifies multiple rail items in small truck utilize parallel sandwiching or right-wall mirroring (e.g. 2 Queen beds in 10ft truck)', () => {
+      const truck10ft = TRUCKS['10ft']; // 119" length, 76" width
+      const result = packTruck(truck10ft, {
+        queen_bed: 2,
+      });
+
+      expect(result.unpackedItems.length).toBe(0);
+      expect(result.blocks.length).toBe(2);
+
+      const bed1 = result.blocks[0];
+      const bed2 = result.blocks[1];
+
+      expect(bed1.itemId).toBe('queen_bed');
+      expect(bed2.itemId).toBe('queen_bed');
+
+      // First bed is on left wall (Z = 0)
+      expect(bed1.z).toBe(0);
+      // Second bed mirrored to right wall (Z = 76 - 20 = 56)
+      expect(bed2.z).toBe(56);
+      expect(bed1.x).toBe(0);
+      expect(bed2.x).toBe(0);
+    });
+
+    it('verifies decoupling of 3D placement failure from truck sizing verdict when volume utilization <= 1.0', () => {
+      const truck10ft = TRUCKS['10ft'];
+      // 3 Queen beds in 10ft truck: ~166.8 cu ft out of 329.6 cu ft usable (50.6% full)
+      const cap = calculateCapacity(truck10ft, { queen_bed: 3 });
+      const pack = packTruck(truck10ft, { queen_bed: 3 });
+
+      // Sizing math confirms volumetric fit
+      expect(cap.volumeUtilization).toBeLessThanOrEqual(1.0);
+      expect(cap.status).toBe('optimal');
+      expect(cap.needsUpgrade).toBe(false);
+
+      // 3D pack may have coordinate constraints for the 3rd bed, but business verdict does not force upgrade
+      expect(pack.blocks.length).toBe(2);
+      expect(pack.unpackedItems.length).toBe(1);
     });
 
     it('verifies sofas stand vertically (X = 0, height = 84″)', () => {
@@ -206,6 +276,18 @@ describe('Calculation and Packing Engines', () => {
       expect(result.unpackedItems.length).toBeGreaterThan(0);
     });
 
+    it('packs studio preset + 10 standard boxes in a 10ft truck with 0 unpacked items', () => {
+      const truck10ft = TRUCKS['10ft'];
+      const inventory = {
+        ...PRESETS.studio.items,
+        box_medium: (PRESETS.studio.items.box_medium || 0) + 5,
+        box_small: (PRESETS.studio.items.box_small || 0) + 5,
+      };
+      const result = packTruck(truck10ft, inventory);
+      expect(result.unpackedItems.length).toBe(0);
+      expect(result.blocks.length).toBe(41);
+    });
+
     it('enforces zero-tolerance flush stacking and bottom-up gravity between stacked boxes', () => {
       const truck15ft = TRUCKS['15ft'];
       // Pack 8 Medium boxes (should create clean 18x18 columns with boxes stacked directly on top of each other)
@@ -268,16 +350,16 @@ describe('Calculation and Packing Engines', () => {
       }
     });
 
-    it('ensures coffee table in studio preset rests on the floor and snaps to the grid', () => {
+    it('ensures coffee table in studio preset rests on the floor and compacts flush with zero-gap', () => {
       const studioPack = packTruck('10ft', PRESETS.studio.items);
       const coffeeTable = studioPack.blocks.find((b) => b.itemId === 'coffee_table');
       expect(coffeeTable).toBeDefined();
       expect(coffeeTable?.y).toBe(0); // Rests directly on deck
-      // Coordinates should snap to clean grid intervals (multiples of 6 or 12)
-      expect(coffeeTable!.x % 6).toBe(0);
-      expect(coffeeTable!.z % 6).toBe(0);
+      // Zero-gap compaction pushes coffee table flush against loveseat (X = 35) and queen bed (Z = 20)
+      expect(coffeeTable!.x).toBe(35);
+      expect(coffeeTable!.z).toBe(20);
 
-      // Verify no boxes are stacked on top of coffee table
+      // Verify boxes are packed on top of coffee table to populate middle cargo volume
       const stackedOnCoffeeTable = studioPack.blocks.filter(
         (b) =>
           b.id !== coffeeTable?.id &&
@@ -287,7 +369,7 @@ describe('Calculation and Packing Engines', () => {
           b.z >= coffeeTable!.z &&
           b.z < coffeeTable!.z + coffeeTable!.width
       );
-      expect(stackedOnCoffeeTable.length).toBe(0);
+      expect(stackedOnCoffeeTable.length).toBeGreaterThan(0);
     });
 
     it('guarantees zero 3D collisions across all dwelling presets', () => {
@@ -303,6 +385,20 @@ describe('Calculation and Packing Engines', () => {
             const overlapY = a.y < b.y + b.height && a.y + a.height > b.y;
             const overlapZ = a.z < b.z + b.width && a.z + a.width > b.z;
             const isColliding = overlapX && overlapY && overlapZ;
+            if (isColliding) {
+              const inCavity = isInsideCavity(a, b) || isInsideCavity(b, a);
+              if (inCavity) {
+                const table = isInsideCavity(a, b) ? a : b;
+                const nested = isInsideCavity(a, b) ? b : a;
+                // Verify strict containment within cavity bounds
+                expect(nested.x).toBeGreaterThanOrEqual(table.x + 2);
+                expect(nested.x + nested.length).toBeLessThanOrEqual(table.x + table.length - 2);
+                expect(nested.z).toBeGreaterThanOrEqual(table.z + 2);
+                expect(nested.z + nested.width).toBeLessThanOrEqual(table.z + table.width - 2);
+                expect(nested.y + nested.height).toBeLessThanOrEqual(table.height - 4);
+                continue;
+              }
+            }
             expect(isColliding).toBe(false);
           }
         }
@@ -393,5 +489,347 @@ describe('Calculation and Packing Engines', () => {
         }
       }
     });
+
+    describe('Fast Analytic Axis-Projection Compaction (compactItems)', () => {
+      const bounds = { length: 240, width: 92, height: 86 };
+
+      it('compresses items along -X to eliminate dead air gaps flush against preceding obstacles', () => {
+        const items = [
+          {
+            id: 'block_1',
+            itemId: 'dresser',
+            label: 'DRESSER',
+            x: 0,
+            y: 0,
+            z: 0,
+            length: 40,
+            height: 30,
+            width: 30,
+            color: '#000',
+            category: 'bedroom' as const,
+            isAttic: false,
+            weightLbs: 100,
+            volumeCuFt: 15,
+            dimensionsText: '40x30x30',
+          },
+          {
+            id: 'block_2',
+            itemId: 'nightstand',
+            label: 'NIGHTSTAND',
+            x: 70, // 30-inch gap!
+            y: 0,
+            z: 0,
+            length: 20,
+            height: 20,
+            width: 20,
+            color: '#000',
+            category: 'bedroom' as const,
+            isAttic: false,
+            weightLbs: 30,
+            volumeCuFt: 4,
+            dimensionsText: '20x20x20',
+          },
+        ];
+
+        const compacted = compactItems(items, bounds);
+        const second = compacted.find((b) => b.id === 'block_2')!;
+        // Pushed flush against block_1 (x = 0 + 40 = 40)
+        expect(second.x).toBe(40);
+        expect(second.z).toBe(0);
+        expect(second.y).toBe(0);
+      });
+
+      it('compresses items along -Z towards the left rail when no obstacle intervenes', () => {
+        const items = [
+          {
+            id: 'block_open',
+            itemId: 'box',
+            label: 'BOX',
+            x: 20,
+            y: 0,
+            z: 45, // Floating away from left rail
+            length: 18,
+            height: 16,
+            width: 18,
+            color: '#000',
+            category: 'boxes' as const,
+            isAttic: false,
+            weightLbs: 30,
+            volumeCuFt: 3,
+            dimensionsText: '18x16x18',
+          },
+        ];
+
+        const compacted = compactItems(items, bounds);
+        expect(compacted[0].z).toBe(0);
+      });
+
+      it('drops items downward via gravity settlement along -Y', () => {
+        const items = [
+          {
+            id: 'box_floating',
+            itemId: 'box_medium',
+            label: 'BOX',
+            x: 0,
+            y: 50, // Floating high without support
+            z: 0,
+            length: 18,
+            height: 16,
+            width: 18,
+            color: '#000',
+            category: 'boxes' as const,
+            isAttic: false,
+            weightLbs: 30,
+            volumeCuFt: 3,
+            dimensionsText: '18x16x18',
+          },
+        ];
+
+        const compacted = compactItems(items, bounds);
+        // Should drop to deck (y = 0)
+        expect(compacted[0].y).toBe(0);
+      });
+
+      it('allows items in non-overlapping Z intervals to slide past each other to X = 0', () => {
+        const items = [
+          {
+            id: 'left_item',
+            itemId: 'dresser',
+            label: 'DRESSER',
+            x: 0,
+            y: 0,
+            z: 0,
+            length: 50,
+            height: 30,
+            width: 30, // Z from 0 to 30
+            color: '#000',
+            category: 'bedroom' as const,
+            isAttic: false,
+            weightLbs: 100,
+            volumeCuFt: 20,
+            dimensionsText: '50x30x30',
+          },
+          {
+            id: 'right_item',
+            itemId: 'sofa',
+            label: 'SOFA',
+            x: 80, // Far back along X
+            y: 0,
+            z: 40, // Z from 40 to 70 (does NOT overlap left_item along Z)
+            length: 35,
+            height: 35,
+            width: 30,
+            color: '#000',
+            category: 'living_room' as const,
+            isAttic: false,
+            weightLbs: 100,
+            volumeCuFt: 20,
+            dimensionsText: '35x35x30',
+          },
+        ];
+
+        const compacted = compactItems(items, bounds);
+        const rightItem = compacted.find((b) => b.id === 'right_item')!;
+        // Since intervals do not overlap in Z, it compresses all the way to front cab X = 0!
+        expect(rightItem.x).toBe(0);
+      });
+    });
+
+    describe('Multi-Pass Heuristic Race & Scoring Engine', () => {
+      it('calculates layout score correctly maximizing placed items and penalizing occupied length', () => {
+        const truckW = 92;
+        const truckH = 86;
+        const score1 = calculateLayoutScore(50, 100, truckW, truckH);
+        const expected1 = 50 * 10000 - 100 * 92 * 86;
+        expect(score1).toBe(expected1);
+
+        // A layout placing more items in shorter length achieves a strictly higher score
+        const scoreBetter = calculateLayoutScore(52, 90, truckW, truckH);
+        expect(scoreBetter).toBeGreaterThan(score1);
+      });
+
+      it('executes the 3-pass heuristic race and returns winning pass and pass scores', () => {
+        const res = packTruck('15ft', PRESETS['1-2_bed'].items);
+        expect(res.winningPass).toBeDefined();
+        expect(['height', 'footprint', 'volume']).toContain(res.winningPass);
+        expect(res.passScores).toBeDefined();
+        expect(typeof res.passScores!.height).toBe('number');
+        expect(typeof res.passScores!.footprint).toBe('number');
+        expect(typeof res.passScores!.volume).toBe('number');
+      });
+
+      it('executes multi-pass packTruck in under 10ms', () => {
+        // Warmup
+        packTruck('15ft', PRESETS['1-2_bed'].items);
+
+        const start = performance.now();
+        const runs = 20;
+        for (let i = 0; i < runs; i++) {
+          packTruck('15ft', PRESETS['1-2_bed'].items);
+        }
+        const elapsed = performance.now() - start;
+        const avgMs = elapsed / runs;
+        expect(avgMs).toBeLessThan(10);
+      });
+    });
+
+    describe('Cavity Registration for Tables & Desks', () => {
+      it('packs small and medium boxes inside four-legged desk cavities', () => {
+        const res = packTruck('15ft', {
+          desk: 1,
+          box_medium: 4,
+          box_small: 4,
+        });
+
+        const desk = res.blocks.find((b) => b.itemId === 'desk');
+        expect(desk).toBeDefined();
+
+        const cavityBoxes = res.blocks.filter(
+          (b) => b.category === 'boxes' && isInsideCavity(desk!, b)
+        );
+
+        // Boxes must be packed inside the desk cavity
+        expect(cavityBoxes.length).toBeGreaterThan(0);
+        for (const box of cavityBoxes) {
+          // Verify bounds: x >= desk.x + 2, x + len <= desk.x + desk.length - 2
+          expect(box.x).toBeGreaterThanOrEqual(desk!.x + 2);
+          expect(box.x + box.length).toBeLessThanOrEqual(desk!.x + desk!.length - 2);
+          // Verify bounds: z >= desk.z + 2, z + wid <= desk.z + desk.width - 2
+          expect(box.z).toBeGreaterThanOrEqual(desk!.z + 2);
+          expect(box.z + box.width).toBeLessThanOrEqual(desk!.z + desk!.width - 2);
+          // Verify height clearance: y + height <= desk.height - 4
+          expect(box.y + box.height).toBeLessThanOrEqual(desk!.height - 4);
+        }
+      });
+
+      it('does not register a sub-furniture cavity for low coffee tables', () => {
+        const res = packTruck('10ft', {
+          coffee_table: 1,
+          box_small: 2,
+        });
+
+        const coffeeTable = res.blocks.find((b) => b.itemId === 'coffee_table');
+        expect(coffeeTable).toBeDefined();
+
+        // No boxes should be nested inside coffee table (it is under 24" height and solid/low)
+        const cavityBoxes = res.blocks.filter(
+          (b) => b.category === 'boxes' && isInsideCavity(coffeeTable!, b)
+        );
+        expect(cavityBoxes.length).toBe(0);
+      });
+    });
+
+    describe('Tailgate Box Anchoring & Continuous Cab-to-Tailgate Packing', () => {
+      it('packs boxes continuously from cab to tailgate with 0 disconnected gaps across presets', () => {
+        for (const [presetId, preset] of Object.entries(PRESETS)) {
+          const res = packTruck(preset.defaultTruck, preset.items);
+
+          // Build continuous X intervals
+          const intervals = res.blocks
+            .map((b) => ({ start: b.x, end: b.x + b.length }))
+            .sort((a, b) => a.start - b.start);
+
+          const merged: Array<{ start: number; end: number }> = [];
+          for (const iv of intervals) {
+            if (merged.length === 0) {
+              merged.push({ ...iv });
+            } else {
+              const last = merged[merged.length - 1];
+              if (iv.start <= last.end) {
+                last.end = Math.max(last.end, iv.end);
+              } else {
+                merged.push({ ...iv });
+              }
+            }
+          }
+
+          // Must have exactly 1 continuous occupied interval (0 gaps / canyons)
+          expect(merged.length).toBe(1);
+          expect(merged[0].start).toBe(0);
+        }
+      });
+
+      it('ensures yellow box tiers sit flush against center furniture with no empty canyon at 74.4% load in 10ft truck', () => {
+        const truck10ft = TRUCKS['10ft'];
+        const inventory = {
+          ...PRESETS.studio.items,
+          box_medium: (PRESETS.studio.items.box_medium || 0) + 8,
+          box_small: (PRESETS.studio.items.box_small || 0) + 6,
+        };
+
+        const res = packTruck(truck10ft, inventory);
+
+        // 100% placed
+        expect(res.unpackedItems.length).toBe(0);
+
+        // Verify coffee table exists and boxes sit flush behind it
+        const coffeeTable = res.blocks.find((b) => b.itemId === 'coffee_table');
+        expect(coffeeTable).toBeDefined();
+        const coffeeTableEnd = coffeeTable!.x + coffeeTable!.length;
+
+        // Verify there is a box tier starting directly at or right beside the coffee table end
+        const adjacentBoxes = res.blocks.filter(
+          (b) => b.category === 'boxes' && b.x >= coffeeTableEnd - 2 && b.x <= coffeeTableEnd + 2
+        );
+        expect(adjacentBoxes.length).toBeGreaterThan(0);
+
+        // Check overall continuous X interval from cab X=0 to tailgate
+        const intervals = res.blocks
+          .map((b) => ({ start: b.x, end: b.x + b.length }))
+          .sort((a, b) => a.start - b.start);
+
+        const merged: Array<{ start: number; end: number }> = [];
+        for (const iv of intervals) {
+          if (merged.length === 0) {
+            merged.push({ ...iv });
+          } else {
+            const last = merged[merged.length - 1];
+            if (iv.start <= last.end) {
+              last.end = Math.max(last.end, iv.end);
+            } else {
+              merged.push({ ...iv });
+            }
+          }
+        }
+
+        expect(merged.length).toBe(1);
+        expect(merged[0].start).toBe(0);
+        expect(merged[0].end).toBeLessThanOrEqual(truck10ft.length);
+        expect(merged[0].end).toBeGreaterThanOrEqual(100);
+      });
+    });
+
+    describe('Vertical Headroom & Wardrobe Top-Stacking Engine', () => {
+      it('allows small boxes to stack on top of wardrobe boxes reaching ceiling height with zero collisions', () => {
+        const truck10ft = TRUCKS['10ft']; // Height 74
+        const res = packTruck(truck10ft, { box_wardrobe: 4, box_small: 16 });
+
+        expect(res.unpackedItems.length).toBe(0);
+
+        const smallBoxes = res.blocks.filter((b) => b.itemId === 'box_small');
+        expect(smallBoxes.length).toBe(16);
+
+        // Small boxes must utilize vertical headroom above wardrobes (y >= 48)
+        const stackedOnWardrobe = smallBoxes.filter((b) => b.y >= 48);
+        expect(stackedOnWardrobe.length).toBeGreaterThanOrEqual(12);
+
+        // Verify boxes reach ceiling height (y + height = 72 in 74" truck)
+        const topCeilingBoxes = smallBoxes.filter((b) => b.y + b.height >= 70);
+        expect(topCeilingBoxes.length).toBeGreaterThanOrEqual(6);
+
+        // Zero 3D collisions
+        for (let i = 0; i < res.blocks.length; i++) {
+          const a = res.blocks[i];
+          for (let j = i + 1; j < res.blocks.length; j++) {
+            const b = res.blocks[j];
+            const xOverlap = Math.max(a.x, b.x) < Math.min(a.x + a.length, b.x + b.length);
+            const yOverlap = Math.max(a.y, b.y) < Math.min(a.y + a.height, b.y + b.height);
+            const zOverlap = Math.max(a.z, b.z) < Math.min(a.z + a.width, b.z + b.width);
+            expect(xOverlap && yOverlap && zOverlap).toBe(false);
+          }
+        }
+      });
+    });
   });
 });
+
