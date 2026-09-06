@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Users, ShieldCheck, Clock, ArrowRight, MapPin, CheckCircle2 } from 'lucide-react';
 import { trackEvent } from '../../lib/analytics/events';
+import AffiliateDisclosure from './AffiliateDisclosure';
 
 interface MovingLaborBookingBoxProps {
   truckLabel?: string;
@@ -175,6 +176,11 @@ export default function MovingLaborBookingBox({
           <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" />
           <span>Standard Damage Coverage Included</span>
         </div>
+      </div>
+
+      {/* FTC Affiliate Disclosure */}
+      <div className="mt-3 pt-2.5 border-t border-[#1F242F]/70">
+        <AffiliateDisclosure />
       </div>
     </div>
   );

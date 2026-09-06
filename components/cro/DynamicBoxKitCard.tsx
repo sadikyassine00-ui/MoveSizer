@@ -3,6 +3,7 @@
 import React from 'react';
 import { Package, ExternalLink, Check, ShoppingBag } from 'lucide-react';
 import { trackEvent } from '../../lib/analytics/events';
+import AffiliateDisclosure from './AffiliateDisclosure';
 
 interface DynamicBoxKitCardProps {
   boxCountTotal?: number;
@@ -95,6 +96,11 @@ export default function DynamicBoxKitCard({
           <Check className="w-3 h-3 text-[#10B981]" /> Includes 3 rolls commercial packing tape + bubble cushion
         </span>
         <span className="font-medium text-[#D1D5DB] hidden sm:inline">Prime 1-Day Delivery Available</span>
+      </div>
+
+      {/* FTC Affiliate Disclosure */}
+      <div className="mt-3 pt-2.5 border-t border-[#1F242F]/70">
+        <AffiliateDisclosure />
       </div>
     </div>
   );

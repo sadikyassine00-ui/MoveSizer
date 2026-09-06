@@ -2,3 +2,4 @@ export { default as TrademarkDisclaimerBanner } from './TrademarkDisclaimerBanne
 export { default as MovingLaborBookingBox } from './MovingLaborBookingBox';
 export { default as RentalSavingsBanner } from './RentalSavingsBanner';
 export { default as DynamicBoxKitCard } from './DynamicBoxKitCard';
+export { default as AffiliateDisclosure } from './AffiliateDisclosure';

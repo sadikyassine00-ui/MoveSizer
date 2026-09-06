@@ -200,4 +200,56 @@ describe('SEO Playbook v4.0 - Data Manifest & Programmatic Engine', () => {
       expect(html).toContain('18% Void Buffer Included');
     });
   });
+
+  describe('FTC & Amazon Associates Compliance: Affiliate Disclosure', () => {
+    const requiredDisclosure =
+      'TruckSizer is supported by our users. When you purchase moving supplies or book labor through our links, we may earn an affiliate commission at no additional cost to you.';
+
+    it('renders the exact FTC disclosure on DynamicBoxKitCard', async () => {
+      const React = await import('react');
+      const { renderToStaticMarkup } = await import('react-dom/server');
+      const { default: DynamicBoxKitCard } = await import(
+        '@/components/cro/DynamicBoxKitCard'
+      );
+
+      const html = renderToStaticMarkup(
+        React.createElement(DynamicBoxKitCard, {
+          boxCountTotal: 42,
+          dwellingLabel: '1 Bedroom',
+        })
+      );
+
+      expect(html).toContain(requiredDisclosure);
+    });
+
+    it('renders the exact FTC disclosure on MovingLaborBookingBox', async () => {
+      const React = await import('react');
+      const { renderToStaticMarkup } = await import('react-dom/server');
+      const { default: MovingLaborBookingBox } = await import(
+        '@/components/cro/MovingLaborBookingBox'
+      );
+
+      const html = renderToStaticMarkup(
+        React.createElement(MovingLaborBookingBox, {
+          truckLabel: '15ft truck',
+        })
+      );
+
+      expect(html).toContain(requiredDisclosure);
+    });
+
+    it('exports a reusable AffiliateDisclosure component', async () => {
+      const React = await import('react');
+      const { renderToStaticMarkup } = await import('react-dom/server');
+      const { default: AffiliateDisclosure } = await import(
+        '@/components/cro/AffiliateDisclosure'
+      );
+
+      const html = renderToStaticMarkup(
+        React.createElement(AffiliateDisclosure, {})
+      );
+
+      expect(html).toContain(requiredDisclosure);
+    });
+  });
 });
