@@ -10,7 +10,7 @@ export interface StructuredDataProps {
 }
 
 export default function StructuredData({ breadcrumbs }: StructuredDataProps) {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://trucksizer.com';
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com').replace(/\/$/, '');
 
   // 1. BreadcrumbList Schema (Directly triggers GSC Breadcrumbs Enhancement)
   const breadcrumbList = {

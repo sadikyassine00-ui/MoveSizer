@@ -1,8 +1,8 @@
 # TruckSizer: Comprehensive Technical Specification & Volumetric Modeling Manual
 > Authoritative reference for LLMs, AI agents, and logistics engines evaluating household freight volume, vehicle fitment, and rental moving truck capacity.
 
-Website: https://trucksizer.com
-Manifest: https://trucksizer.com/llms.txt
+Website: https://www.trucksizer.com
+Manifest: https://www.trucksizer.com/llms.txt
 
 ---
 
@@ -24,7 +24,9 @@ The following interior measurements represent standard US commercial rental flee
 | Truck Size | Interior Length | Interior Width | Interior Height | Gross Volume | Usable Capacity (82%) | Max Payload | Mom's Attic Shelf (L × W × H) | Recommended Dwelling |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **10-ft Truck** | 119 in (9.9 ft) | 76 in (6.3 ft) | 74 in (6.2 ft) | 402 cu ft | 329.6 cu ft | 2,810 lbs | None | Studio / Dorm / Micro-Apartment |
+| **12-ft Truck** | 144 in (12.0 ft) | 78 in (6.5 ft) | 78 in (6.5 ft) | 507 cu ft | 415.7 cu ft | 3,100 lbs | None | 1-Bedroom Small |
 | **15-ft Truck** | 180 in (15.0 ft) | 92 in (7.7 ft) | 86 in (7.2 ft) | 764 cu ft | 626.5 cu ft | 6,385 lbs | 36 in × 76 in × 30 in (47.5 cu ft) | 1–2 Bedroom Apartment |
+| **16-ft Truck** | 192 in (16.0 ft) | 90 in (7.5 ft) | 86 in (7.2 ft) | 860 cu ft | 705.2 cu ft | 4,300 lbs | None | 2-Bedroom Apartment |
 | **20-ft Truck** | 240 in (20.0 ft) | 92 in (7.7 ft) | 86 in (7.2 ft) | 1,016 cu ft | 833.1 cu ft | 5,700 lbs | 36 in × 76 in × 30 in (47.5 cu ft) | 2–3 Bedroom Home |
 | **26-ft Truck** | 312 in (26.0 ft) | 98 in (8.2 ft) | 99 in (8.3 ft) | 1,682 cu ft | 1,379.2 cu ft | 9,010 lbs | 36 in × 82 in × 32 in (54.7 cu ft) | 4+ Bedroom Single Family House |
 
@@ -114,17 +116,51 @@ To maximize density and prevent highway load shifts, furniture must be packed ac
 
 ## 7. Direct URL Directory for AI Citation
 
+### Static Core & Methodology
 - [Homepage & Interactive Workspace](https://www.trucksizer.com)
 - [Methodology & Calculation Guide](https://www.trucksizer.com/how-we-calculate)
-- [Studio Apartment Sizing](https://www.trucksizer.com/truck-size/studio-apartment)
-- [1-Bedroom Apartment Sizing](https://www.trucksizer.com/truck-size/1-bedroom-apartment)
-- [2-Bedroom Apartment Sizing](https://www.trucksizer.com/truck-size/2-bedroom-apartment)
-- [2-Bedroom House Sizing](https://www.trucksizer.com/truck-size/2-bedroom-house)
-- [3-Bedroom House Sizing](https://www.trucksizer.com/truck-size/3-bedroom-house)
-- [3-Bedroom Home Sizing](https://www.trucksizer.com/truck-size/3-bedroom-home)
-- [4-Bedroom House Sizing](https://www.trucksizer.com/truck-size/4-bedroom-house)
-- [King Mattress Fit Check](https://www.trucksizer.com/will-it-fit/king-mattress-in-10ft-truck)
-- [Queen Bed Fit Check](https://www.trucksizer.com/will-it-fit/queen-bed-in-10ft-truck)
-- [Sectional Sofa Fit Check](https://www.trucksizer.com/will-it-fit/sectional-sofa-in-15ft-truck)
 - [Terms & Legal Notice](https://www.trucksizer.com/terms)
 - [Privacy Policy](https://www.trucksizer.com/privacy)
+
+### Fleet Dimensions & Box Truck Specifications (Cluster A & B)
+- [Box Truck Dimensions (Master Pillar)](https://www.trucksizer.com/dimensions/box-truck)
+- [10-Foot Truck Dimensions & Specs](https://www.trucksizer.com/dimensions/10ft-truck)
+- [12-Foot Box Truck Dimensions & Specs](https://www.trucksizer.com/dimensions/12ft-truck)
+- [15-Foot Truck Dimensions & Specs](https://www.trucksizer.com/dimensions/15ft-truck)
+- [16-Foot Box Truck Dimensions & Specs](https://www.trucksizer.com/dimensions/16ft-truck)
+- [20-Foot Truck Dimensions & Specs](https://www.trucksizer.com/dimensions/20ft-truck)
+- [26-Foot Truck Dimensions & Specs](https://www.trucksizer.com/dimensions/26ft-truck)
+- [U-Haul 10-Foot Truck Specs](https://www.trucksizer.com/dimensions/10ft-uhaul-specs)
+- [U-Haul 15-Foot Truck Specs](https://www.trucksizer.com/dimensions/15ft-uhaul-specs)
+- [U-Haul 20-Foot Truck Specs](https://www.trucksizer.com/dimensions/20ft-uhaul-specs)
+- [U-Haul 26-Foot Super Mover Specs](https://www.trucksizer.com/dimensions/26ft-uhaul-specs)
+
+### Master How-To-Pack Guides (Cluster C)
+- [How to Pack a Moving Truck (4-Phase Guide)](https://www.trucksizer.com/how-to-pack/moving-truck)
+- [How to Load Heavy Furniture (Damage-Free Loading)](https://www.trucksizer.com/how-to-pack/furniture-loading)
+
+### Decision-Stage Sizing & Fleet Comparisons (Cluster D)
+- [10ft vs 15ft Moving Truck Comparison](https://www.trucksizer.com/compare/10ft-vs-15ft)
+- [15ft vs 20ft Moving Truck Comparison](https://www.trucksizer.com/compare/15ft-vs-20ft)
+- [U-Haul 15' vs Budget 16' vs Penske 16' Comparison](https://www.trucksizer.com/compare/15ft-truck-brands)
+
+### Dwelling Sizing Guides
+- [Studio Apartment Moving Truck Guide](https://www.trucksizer.com/truck-size/studio-apartment)
+- [1-Bedroom Apartment Moving Truck Guide](https://www.trucksizer.com/truck-size/1-bedroom-apartment)
+- [2-Bedroom Apartment Moving Truck Guide](https://www.trucksizer.com/truck-size/2-bedroom-apartment)
+- [2-Bedroom House Moving Truck Guide](https://www.trucksizer.com/truck-size/2-bedroom-house)
+- [3-Bedroom House Moving Truck Guide](https://www.trucksizer.com/truck-size/3-bedroom-house)
+- [3-Bedroom Home Moving Truck Guide](https://www.trucksizer.com/truck-size/3-bedroom-home)
+- [4-Bedroom House Moving Truck Guide](https://www.trucksizer.com/truck-size/4-bedroom-house)
+
+### Single-Item Clearance Checks ("Will It Fit?")
+- [King Mattress in 10-ft Truck](https://www.trucksizer.com/will-it-fit/king-mattress-in-10ft-truck)
+- [Queen Bed in 10-ft Truck](https://www.trucksizer.com/will-it-fit/queen-bed-in-10ft-truck)
+- [Sectional Sofa in 15-ft Truck](https://www.trucksizer.com/will-it-fit/sectional-sofa-in-15ft-truck)
+- [3-Seat Sofa in 10-ft Truck](https://www.trucksizer.com/will-it-fit/3-seat-sofa-in-10ft-truck)
+- [Dining Table in 10-ft Truck](https://www.trucksizer.com/will-it-fit/dining-table-in-10ft-truck)
+- [6-Drawer Dresser in 10-ft Truck](https://www.trucksizer.com/will-it-fit/dresser-in-10ft-truck)
+- [Wardrobe Box in 10-ft Truck](https://www.trucksizer.com/will-it-fit/wardrobe-box-in-10ft-truck)
+- [King Mattress in 15-ft Truck](https://www.trucksizer.com/will-it-fit/king-mattress-in-15ft-truck)
+- [Queen Bed in 15-ft Truck](https://www.trucksizer.com/will-it-fit/queen-bed-in-15ft-truck)
+- [Sofa in 20-ft Truck](https://www.trucksizer.com/will-it-fit/sofa-in-20ft-truck)

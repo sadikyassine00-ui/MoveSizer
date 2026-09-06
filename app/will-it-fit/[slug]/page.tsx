@@ -81,7 +81,7 @@ function parseSlug(slug: string): FitAnalysis | null {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const analysis = parseSlug(slug);
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://trucksizer.com';
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com').replace(/\/$/, '');
 
   if (!analysis) {
     return { title: 'Will It Fit? | TruckSizer' };
@@ -119,7 +119,7 @@ export async function generateStaticParams() {
 export default async function WillItFitPage({ params }: Props) {
   const { slug } = await params;
   const analysis = parseSlug(slug);
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://trucksizer.com';
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com').replace(/\/$/, '');
 
   if (!analysis) {
     notFound();

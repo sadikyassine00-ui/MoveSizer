@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, Shield } from 'lucide-react';
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://trucksizer.com';
+const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com').replace(/\/$/, '');
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | TruckSizer',

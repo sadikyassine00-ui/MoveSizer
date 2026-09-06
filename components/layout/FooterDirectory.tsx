@@ -12,6 +12,8 @@ const CLEARANCE_CHECKS = [
   { slug: 'dresser-in-10ft-truck', label: '6-Drawer Dresser in 10-ft Truck' },
   { slug: 'wardrobe-box-in-10ft-truck', label: 'Wardrobe Box in 10-ft Truck' },
   { slug: 'king-mattress-in-15ft-truck', label: 'King Mattress in 15-ft Truck' },
+  { slug: 'queen-bed-in-15ft-truck', label: 'Queen Bed in 15-ft Truck' },
+  { slug: 'sofa-in-20ft-truck', label: 'Sofa in 20-ft Truck' },
 ];
 
 const DIMENSION_LINKS = [

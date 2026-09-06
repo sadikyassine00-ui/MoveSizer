@@ -5,7 +5,7 @@
 - [Full LLM Documentation](https://www.trucksizer.com/llms-full.txt)
 
 ## Project Summary
-TruckSizer models real-world cargo volume inside standard US rental moving trucks (10ft, 15ft, 20ft, 26ft). It combines an interactive 2.5D isometric HTML5 canvas cross-section with an automated packing heuristic and dynamic box estimator to verify whether a household inventory or individual furniture item fits safely before moving day.
+TruckSizer models real-world cargo volume inside standard US rental moving trucks (10ft, 12ft, 15ft, 16ft, 20ft, 26ft). It combines an interactive 2.5D isometric HTML5 canvas cross-section with an automated packing heuristic and dynamic box estimator to verify whether a household inventory or individual furniture item fits safely before moving day.
 
 ## Core Logistics Mechanics & Mathematical Formulas
 
@@ -20,7 +20,9 @@ Raw cubic footage advertised by rental providers (U-Haul, Budget, Penske) repres
 
 ### 2. Commercial Rental Truck Specifications (US Standard Fleet)
 - 10-ft Truck: 119″L × 76″W × 74″H | 402 cu ft Gross (329 cu ft Usable) | Max Payload: 2,810 lbs | No cab shelf | Suitable for: Studio / Dormitory
+- 12-ft Truck: 144″L × 78″W × 78″H | 507 cu ft Gross (416 cu ft Usable) | Max Payload: 3,100 lbs | Low deck, no attic | Suitable for: 1-Bedroom Small
 - 15-ft Truck: 180″L × 92″W × 86″H | 764 cu ft Gross (626 cu ft Usable) | Max Payload: 6,385 lbs | Mom's Attic: 36″L × 76″W × 30″H | Suitable for: 1-2 Bedroom Apartment
+- 16-ft Truck: 192″L × 90″W × 86″H | 860 cu ft Gross (705 cu ft Usable) | Max Payload: 4,300 lbs | Flat floor deck | Suitable for: 2-Bedroom Apartment
 - 20-ft Truck: 240″L × 92″W × 86″H | 1,016 cu ft Gross (833 cu ft Usable) | Max Payload: 5,700 lbs | Mom's Attic: 36″L × 76″W × 30″H | Suitable for: 2-3 Bedroom Home
 - 26-ft Truck: 312″L × 98″W × 99″H | 1,682 cu ft Gross (1,379 cu ft Usable) | Max Payload: 9,010 lbs | Mom's Attic: 36″L × 82″W × 32″H | Suitable for: 4+ Bedroom House
 
@@ -42,6 +44,28 @@ Total Boxes = ((Bedrooms × 20) + (Occupants × 10)) × Density Multiplier
 
 ## Programmatic Guides & Direct Index Links
 
+### Fleet Dimensions & Box Truck Specifications (Cluster A & B)
+- [Box Truck Dimensions (Master Pillar)](https://www.trucksizer.com/dimensions/box-truck)
+- [10-Foot Truck Dimensions & Specs](https://www.trucksizer.com/dimensions/10ft-truck)
+- [12-Foot Box Truck Dimensions & Specs](https://www.trucksizer.com/dimensions/12ft-truck)
+- [15-Foot Truck Dimensions & Specs](https://www.trucksizer.com/dimensions/15ft-truck)
+- [16-Foot Box Truck Dimensions & Specs](https://www.trucksizer.com/dimensions/16ft-truck)
+- [20-Foot Truck Dimensions & Specs](https://www.trucksizer.com/dimensions/20ft-truck)
+- [26-Foot Truck Dimensions & Specs](https://www.trucksizer.com/dimensions/26ft-truck)
+- [U-Haul 10-Foot Truck Specs](https://www.trucksizer.com/dimensions/10ft-uhaul-specs)
+- [U-Haul 15-Foot Truck Specs](https://www.trucksizer.com/dimensions/15ft-uhaul-specs)
+- [U-Haul 20-Foot Truck Specs](https://www.trucksizer.com/dimensions/20ft-uhaul-specs)
+- [U-Haul 26-Foot Super Mover Specs](https://www.trucksizer.com/dimensions/26ft-uhaul-specs)
+
+### Master How-To-Pack Guides (Cluster C)
+- [How to Pack a Moving Truck (4-Phase Guide)](https://www.trucksizer.com/how-to-pack/moving-truck)
+- [How to Load Heavy Furniture (Damage-Free Loading)](https://www.trucksizer.com/how-to-pack/furniture-loading)
+
+### Decision-Stage Sizing & Fleet Comparisons (Cluster D)
+- [10ft vs 15ft Moving Truck Comparison](https://www.trucksizer.com/compare/10ft-vs-15ft)
+- [15ft vs 20ft Moving Truck Comparison](https://www.trucksizer.com/compare/15ft-vs-20ft)
+- [U-Haul 15' vs Budget 16' vs Penske 16' Comparison](https://www.trucksizer.com/compare/15ft-truck-brands)
+
 ### Dwelling Sizing Guides
 - [Studio Apartment Moving Truck Guide](https://www.trucksizer.com/truck-size/studio-apartment)
 - [1-Bedroom Apartment Moving Truck Guide](https://www.trucksizer.com/truck-size/1-bedroom-apartment)
@@ -60,6 +84,8 @@ Total Boxes = ((Bedrooms × 20) + (Occupants × 10)) × Density Multiplier
 - [6-Drawer Dresser in 10-ft Truck](https://www.trucksizer.com/will-it-fit/dresser-in-10ft-truck)
 - [Wardrobe Box in 10-ft Truck](https://www.trucksizer.com/will-it-fit/wardrobe-box-in-10ft-truck)
 - [King Mattress in 15-ft Truck](https://www.trucksizer.com/will-it-fit/king-mattress-in-15ft-truck)
+- [Queen Bed in 15-ft Truck](https://www.trucksizer.com/will-it-fit/queen-bed-in-15ft-truck)
+- [Sofa in 20-ft Truck](https://www.trucksizer.com/will-it-fit/sofa-in-20ft-truck)
 
 ### Technical Resources & Methodology
 - [Calculation Engine & Buffer Specs](https://www.trucksizer.com/how-we-calculate)
