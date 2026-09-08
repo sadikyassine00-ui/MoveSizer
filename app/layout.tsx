@@ -14,10 +14,10 @@ const inter = Inter({
   display: 'swap',
 });
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com').replace(/\/$/, '');
+const siteUrl = 'https://trucksizer.com';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL('https://trucksizer.com'),
   title: {
     default: 'TruckSizer — Moving Truck Cargo Fit & Sizing Engine',
     template: '%s | TruckSizer',
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   creator: 'TruckSizer',
   publisher: 'TruckSizer',
   alternates: {
-    canonical: '/',
+    canonical: './',
   },
   icons: {
     icon: [
@@ -88,7 +88,7 @@ export default function RootLayout({
 
   return (
     <html lang="en" className={`dark ${inter.variable}`} suppressHydrationWarning>
-      <body className="min-h-screen bg-[#090A0C] text-[#F8F9FA] font-sans antialiased selection:bg-[#FF5500] selection:text-white">
+      <body className="min-h-screen bg-[#090A0C] text-[#F8F9FA] font-sans antialiased selection:bg-[#FF5500] selection:text-white overflow-x-hidden w-full max-w-full">
         <StructuredData />
         <Script
           id="microsoft-clarity"

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Users, ShieldCheck, Clock, ArrowRight, MapPin, CheckCircle2 } from 'lucide-react';
-import { trackEvent } from '../../lib/analytics/events';
+import { trackEvent, trackLaborCtaClicked } from '../../lib/analytics/events';
 import AffiliateDisclosure from './AffiliateDisclosure';
 
 interface MovingLaborBookingBoxProps {
@@ -42,6 +42,11 @@ export default function MovingLaborBookingBox({
       hours,
       truck_label: truckLabel,
       estimated_cost: estimatedTotal,
+    });
+
+    trackLaborCtaClicked({
+      partner: 'hireahelper',
+      truck_size: truckLabel,
     });
 
     // Generate affiliate referral destination (HireAHelper / MovingHelp gateway)

@@ -11,6 +11,10 @@ import {
   trackSizeUpClicked,
   trackQuoteStep2Reached,
   trackQuoteFormSubmitted,
+  trackCanvasInteracted,
+  resetCanvasInteractedFlag,
+  trackLaborCtaClicked,
+  trackBoxKitClicked,
 } from '@/lib/analytics/events';
 
 describe('GA4 Centralized Telemetry Utility', () => {
@@ -264,5 +268,60 @@ describe('GA4 Centralized Telemetry Utility', () => {
     });
 
     expect(clarityMock).toHaveBeenCalledWith('event', 'lead_submitted');
+  });
+
+  it('tracks canvas_interacted once per session/preset and dedupes subsequent interactions', () => {
+    resetCanvasInteractedFlag();
+    trackCanvasInteracted({ action: 'mouse_drag', truck_size: '15ft' });
+    expect(window.gtag).toHaveBeenCalledWith('event', 'canvas_interacted', {
+      action: 'mouse_drag',
+      truck_size: '15ft',
+    });
+
+    // Subsequent call should be deduplicated
+    vi.mocked(window.gtag).mockClear();
+    trackCanvasInteracted({ action: 'zoom_in', truck_size: '15ft' });
+    expect(window.gtag).not.toHaveBeenCalled();
+
+    // Forced call should bypass deduplication
+    trackCanvasInteracted({ action: 'new_preset', truck_size: '20ft' }, true);
+    expect(window.gtag).toHaveBeenCalledWith('event', 'canvas_interacted', {
+      action: 'new_preset',
+      truck_size: '20ft',
+    });
+  });
+
+  it('tracks preset_selected with preset_name', () => {
+    trackEvent('preset_selected', { preset_name: 'Studio Apartment' });
+    expect(window.gtag).toHaveBeenCalledWith('event', 'preset_selected', {
+      preset_name: 'Studio Apartment',
+    });
+
+    trackPresetSelected('1-2 Bedroom Apartment');
+    expect(window.gtag).toHaveBeenCalledWith('event', 'preset_selected', {
+      preset_name: '1-2 Bedroom Apartment',
+    });
+  });
+
+  it('tracks labor_cta_clicked with partner and truck_size', () => {
+    trackLaborCtaClicked({
+      partner: 'hireahelper',
+      truck_size: '15ft moving truck',
+    });
+
+    expect(window.gtag).toHaveBeenCalledWith('event', 'labor_cta_clicked', {
+      partner: 'hireahelper',
+      truck_size: '15ft moving truck',
+    });
+  });
+
+  it('tracks box_kit_clicked with calculated_box_count', () => {
+    trackBoxKitClicked({
+      calculated_box_count: 52,
+    });
+
+    expect(window.gtag).toHaveBeenCalledWith('event', 'box_kit_clicked', {
+      calculated_box_count: 52,
+    });
   });
 });

@@ -15,12 +15,27 @@ export type FunnelEvent =
   | 'affiliate_click'
   | 'moving_labor_searched'
   | 'rental_savings_clicked'
-  | 'box_kit_amazon_clicked';
+  | 'box_kit_amazon_clicked'
+  | 'canvas_interacted'
+  | 'labor_cta_clicked'
+  | 'box_kit_clicked';
 
 export interface EventPayloads {
   preset_selected: {
-    preset_id: string;
+    preset_name?: string;
+    preset_id?: string;
+    truck_size?: string;
+  };
+  canvas_interacted: {
+    action?: string;
+    truck_size?: string;
+  };
+  labor_cta_clicked: {
+    partner: 'hireahelper' | 'billy' | 'movinghelp';
     truck_size: string;
+  };
+  box_kit_clicked: {
+    calculated_box_count: number;
   };
   capacity_threshold_crossed: {
     status: 'caution' | 'critical';
@@ -225,8 +240,48 @@ export function trackAffiliateClick(data: {
 // Backwards-Compatible Helpers
 // -------------------------------------------------------------
 
-export function trackPresetSelected(presetId: string, truckSize: string) {
-  trackEvent('preset_selected', { preset_id: presetId, truck_size: truckSize });
+export function trackPresetSelected(
+  preset: string | { preset_name: string },
+  truckSize?: string
+) {
+  if (typeof preset === 'object' && 'preset_name' in preset) {
+    trackEvent('preset_selected', preset);
+  } else if (truckSize !== undefined) {
+    trackEvent('preset_selected', { preset_id: preset, truck_size: truckSize });
+  } else {
+    trackEvent('preset_selected', { preset_name: preset });
+  }
+}
+
+/**
+ * 6. Canvas interacted: fires once per session/preset on user drag, rotate, zoom, or item selection.
+ */
+let hasLoggedCanvasInteraction = false;
+export function trackCanvasInteracted(data?: { action?: string; truck_size?: string }, force?: boolean) {
+  if (hasLoggedCanvasInteraction && !force) return;
+  hasLoggedCanvasInteraction = true;
+  trackEvent('canvas_interacted', data || {});
+}
+
+export function resetCanvasInteractedFlag() {
+  hasLoggedCanvasInteraction = false;
+}
+
+/**
+ * 7. Outbound moving labor / helper CTA click.
+ */
+export function trackLaborCtaClicked(data: {
+  partner: 'hireahelper' | 'billy' | 'movinghelp';
+  truck_size: string;
+}) {
+  trackEvent('labor_cta_clicked', data);
+}
+
+/**
+ * 8. Amazon box kit click.
+ */
+export function trackBoxKitClicked(data: { calculated_box_count: number }) {
+  trackEvent('box_kit_clicked', data);
 }
 
 export function trackCapacityThresholdCrossed(

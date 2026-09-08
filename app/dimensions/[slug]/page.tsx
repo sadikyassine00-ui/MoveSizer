@@ -40,7 +40,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const spec = getDimensionSpec(slug);
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com').replace(/\/$/, '');
+  const baseUrl = 'https://trucksizer.com';
 
   if (!spec) {
     return {
@@ -48,25 +48,59 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
+  const truckSizeMap: Record<string, string> = {
+    'box-truck': 'Box Truck',
+    '10ft-truck': '10ft Truck',
+    '12ft-truck': '12ft Truck',
+    '15ft-truck': '15ft Truck',
+    '16ft-truck': '16ft Truck',
+    '20ft-truck': '20ft Truck',
+    '26ft-truck': '26ft Truck',
+    '10ft-uhaul-specs': '10ft U-Haul',
+    '15ft-uhaul-specs': '15ft U-Haul',
+    '20ft-uhaul-specs': '20ft U-Haul',
+    '26ft-uhaul-specs': '26ft U-Haul',
+  };
+
+  const truckSize =
+    truckSizeMap[slug] ||
+    (spec.isBrandFlanking
+      ? `${spec.dimensions.lengthFeet} U-Haul`
+      : `${spec.dimensions.lengthFeet} Truck`);
+
+  let title = `${truckSize} Dimensions: Usable Cu Ft & Clearance Cheat Sheet`;
+  if (title.length > 59) {
+    title = `${truckSize} Dimensions: Usable Cu Ft & Clearances`;
+  }
+  if (title.length > 59) {
+    title = `${truckSize} Dimensions: Usable Cu Ft Guide`;
+  }
+
+  const descTruck = truckSize.replace(/\s+Truck$/i, '');
+  let description = `Real exterior and interior dimensions for ${descTruck} moving trucks. Compare advertised volume vs. actual usable space before renting.`;
+  if (description.length > 154) {
+    description = `Real exterior and interior dimensions for ${descTruck}. Compare advertised volume vs. actual usable space before renting.`;
+  }
+
   const canonicalUrl = `${baseUrl}/dimensions/${spec.canonicalSlug}`;
 
   return {
-    title: spec.title,
-    description: spec.metaDescription,
+    title,
+    description,
     alternates: {
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: spec.title,
-      description: spec.metaDescription,
+      title,
+      description,
       url: canonicalUrl,
       type: 'article',
       siteName: 'TruckSizer',
     },
     twitter: {
       card: 'summary_large_image',
-      title: spec.title,
-      description: spec.metaDescription,
+      title,
+      description,
     },
   };
 }
@@ -74,7 +108,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function DimensionPage({ params }: Props) {
   const { slug } = await params;
   const spec = getDimensionSpec(slug);
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com').replace(/\/$/, '');
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://trucksizer.com').replace(/\/$/, '');
 
   if (!spec) {
     notFound();
@@ -107,7 +141,7 @@ export default async function DimensionPage({ params }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-[#090A0C] text-[#F8F9FA] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#090A0C] text-[#F8F9FA] flex flex-col font-sans overflow-x-hidden w-full max-w-full">
       {/* Tier 3: Schema.org Structured Data */}
       <StructuredData
         breadcrumbs={[

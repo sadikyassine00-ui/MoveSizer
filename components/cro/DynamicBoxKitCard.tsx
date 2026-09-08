@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Package, ExternalLink, Check, ShoppingBag } from 'lucide-react';
-import { trackEvent } from '../../lib/analytics/events';
+import { trackEvent, trackBoxKitClicked } from '../../lib/analytics/events';
 import AffiliateDisclosure from './AffiliateDisclosure';
 
 interface DynamicBoxKitCardProps {
@@ -31,6 +31,9 @@ export default function DynamicBoxKitCard({
   const exactPieces = small + medium + large + wardrobe;
 
   const handleAmazonClick = () => {
+    trackBoxKitClicked({
+      calculated_box_count: exactPieces,
+    });
     trackEvent('box_kit_amazon_clicked', {
       total_boxes: exactPieces,
       dwelling: dwellingLabel,

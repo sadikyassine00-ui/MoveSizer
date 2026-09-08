@@ -29,7 +29,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { dwelling } = await params;
   const config = getDwellingConfig(dwelling);
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com').replace(/\/$/, '');
+  const baseUrl = 'https://trucksizer.com';
 
   if (!config) {
     return {
@@ -37,25 +37,50 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
+  const shortNames: Record<string, string> = {
+    'studio-apartment': 'Studio',
+    '1-bedroom-apartment': '1-Bed',
+    '2-bedroom-apartment': '2-Bed',
+    '2-bedroom-house': '2-Bed House',
+    '3-bedroom-house': '3-Bed House',
+    '3-bedroom-home': '3-Bed Home',
+    '4-bedroom-house': '4-Bed House',
+  };
+
+  const shortName = shortNames[dwelling] || config.name;
+  let title = `What Size Moving Truck for a ${shortName}? (Visual Packing Guide)`;
+  if (title.length > 59) {
+    title = `What Size Truck for a ${shortName}? (Visual Packing Guide)`;
+  }
+  if (title.length > 59) {
+    title = `What Size Truck for a ${shortName}? (Visual Guide)`;
+  }
+
+  const dwellingLower = config.name.toLowerCase();
+  let description = `Can your ${dwellingLower} fit in a 10ft, 15ft, or 20ft truck? See a 2.5D visual load simulation with real usable cubic footage and clearance checks.`;
+  if (description.length > 154) {
+    description = `Can your ${dwellingLower} fit in a 10ft, 15ft, or 20ft truck? 2.5D visual load simulation with real usable cubic footage and clearances.`;
+  }
+
   const canonicalUrl = `${baseUrl}/truck-size/${dwelling}`;
 
   return {
-    title: config.title,
-    description: config.description,
+    title,
+    description,
     alternates: {
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: config.title,
-      description: config.description,
+      title,
+      description,
       url: canonicalUrl,
       type: 'article',
       siteName: 'TruckSizer',
     },
     twitter: {
       card: 'summary_large_image',
-      title: config.title,
-      description: config.description,
+      title,
+      description,
     },
   };
 }
@@ -63,7 +88,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function DwellingPage({ params }: Props) {
   const { dwelling } = await params;
   const config = getDwellingConfig(dwelling);
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com').replace(/\/$/, '');
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://trucksizer.com').replace(/\/$/, '');
 
   if (!config) {
     notFound();
@@ -100,7 +125,7 @@ export default async function DwellingPage({ params }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-[#090A0C] text-[#F8F9FA] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#090A0C] text-[#F8F9FA] flex flex-col font-sans overflow-x-hidden w-full max-w-full">
       {/* 1. Schema.org Structured Data */}
       <StructuredData
         breadcrumbs={[

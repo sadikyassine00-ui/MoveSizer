@@ -81,14 +81,51 @@ function parseSlug(slug: string): FitAnalysis | null {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const analysis = parseSlug(slug);
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com').replace(/\/$/, '');
+  const baseUrl = 'https://trucksizer.com';
 
   if (!analysis) {
     return { title: 'Will It Fit? | TruckSizer' };
   }
 
-  const title = `Will a ${analysis.item.name} Fit in a ${TRUCKS[analysis.truckId].name}? (Visual Check)`;
-  const description = analysis.explanation;
+  const cleanItemMap: Record<string, string> = {
+    king_bed: 'King Mattress',
+    queen_bed: 'Queen Bed',
+    sofa_3seat: '3-Seat Sofa',
+    loveseat: 'Loveseat',
+    dining_table: 'Dining Table',
+    dresser_6drawer: '6-Drawer Dresser',
+    box_wardrobe: 'Wardrobe Box',
+  };
+
+  const cleanTruckMap: Record<TruckId, string> = {
+    '10ft': '10ft Truck',
+    '15ft': '15ft Truck',
+    '20ft': '20ft Truck',
+    '26ft': '26ft Truck',
+  };
+
+  const itemName = cleanItemMap[analysis.item.id] || analysis.item.name.replace(/\s*\([^)]*\)/g, '').trim();
+  const truckName = cleanTruckMap[analysis.truckId] || `${analysis.truckId} Truck`;
+
+  let title = `Will a ${itemName} Fit in a ${truckName}? (Exact Angles & Fit Test)`;
+  if (title.length > 59) {
+    title = `Will a ${itemName} Fit in a ${truckName}? (Angles & Fit Test)`;
+  }
+  if (title.length > 59) {
+    title = `Will a ${itemName} Fit in a ${truckName}? (Exact Fit Test)`;
+  }
+  if (title.length > 59) {
+    title = `Will a ${itemName} Fit in a ${truckName}? (Fit Test)`;
+  }
+  if (title.length > 59) {
+    title = `Will a ${itemName} Fit a ${truckName}? (Fit Test)`;
+  }
+
+  let description = `Check if a ${itemName} fits inside a ${truckName}. Visual interior dimensions, doorway clearance, and loading orientation tips to avoid getting stuck.`;
+  if (description.length > 154) {
+    description = `Check if a ${itemName} fits inside a ${truckName}. Visual interior dimensions, doorway clearance, and orientation tips to avoid getting stuck.`;
+  }
+
   const canonicalUrl = `${baseUrl}/will-it-fit/${slug}`;
 
   return {
@@ -119,7 +156,7 @@ export async function generateStaticParams() {
 export default async function WillItFitPage({ params }: Props) {
   const { slug } = await params;
   const analysis = parseSlug(slug);
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com').replace(/\/$/, '');
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://trucksizer.com').replace(/\/$/, '');
 
   if (!analysis) {
     notFound();
@@ -189,7 +226,7 @@ export default async function WillItFitPage({ params }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-[#090A0C] text-[#F8F9FA] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#090A0C] text-[#F8F9FA] flex flex-col font-sans overflow-x-hidden w-full max-w-full">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}

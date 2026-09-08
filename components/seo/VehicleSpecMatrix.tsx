@@ -213,7 +213,7 @@ export default function VehicleSpecMatrix({
   return (
     <section
       aria-labelledby="specs-matrix-heading"
-      className={`rounded-xl border border-slate-800 bg-slate-900/90 overflow-hidden shadow-xl ${className}`}
+      className={`rounded-xl border border-slate-800 bg-slate-900/90 overflow-hidden shadow-xl w-full max-w-full ${className}`}
     >
       {/* Header Bar */}
       <div className="px-4 sm:px-6 py-4 bg-slate-950/80 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -243,8 +243,8 @@ export default function VehicleSpecMatrix({
       </div>
 
       {/* Semantic 3-Column HTML Table */}
-      <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-700">
-        <table className="w-full text-left border-collapse min-w-[620px] sm:min-w-full">
+      <div className="w-full max-w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-700">
+        <table className="w-full text-left border-collapse min-w-[580px] sm:min-w-full">
           <thead>
             <tr className="bg-slate-950/60 border-b border-slate-800 text-slate-400 text-xs font-mono uppercase tracking-wider">
               <th scope="col" className="py-3.5 px-4 sm:px-6 font-semibold w-[28%]">

@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { TruckSpec } from '@/lib/constants/trucks';
 import { DrawableBlock, sortBlocksTopological } from '@/lib/engine/packEngine';
 import { ZoomIn, ZoomOut, RotateCcw, Move, X } from 'lucide-react';
+import { trackCanvasInteracted } from '@/lib/analytics/events';
 
 interface TruckCanvasProps {
   truck: TruckSpec;
@@ -93,6 +94,7 @@ export function TruckCanvas({
   const panOffsetRef = useRef<Point2D>({ x: 0, y: 0 });
   const touchPinchDistRef = useRef<number | null>(null);
   const touchPanStartRef = useRef<Point2D>({ x: 0, y: 0 });
+  const touchTwoFingerCenterRef = useRef<Point2D | null>(null);
   const touchHasDraggedRef = useRef<boolean>(false);
 
   useEffect(() => {
@@ -1246,88 +1248,109 @@ export function TruckCanvas({
       setPanOffset({ x: nextPanX, y: nextPanY });
     };
 
-    // Native touch handlers for mobile 1-finger pan and 2-finger pinch-to-zoom
+    // Native touch handlers for mobile: allows single-finger vertical scroll on page, 2-finger 3D camera pan & pinch zoom
     const onNativeTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 1) {
         const t = e.touches[0];
         touchPanStartRef.current = { x: t.clientX, y: t.clientY };
         touchHasDraggedRef.current = false;
         touchPinchDistRef.current = null;
+        touchTwoFingerCenterRef.current = null;
         setShowHelperPill(false);
       } else if (e.touches.length >= 2) {
         const t1 = e.touches[0];
         const t2 = e.touches[1];
         touchPinchDistRef.current = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        touchTwoFingerCenterRef.current = {
+          x: (t1.clientX + t2.clientX) / 2,
+          y: (t1.clientY + t2.clientY) / 2,
+        };
         setShowHelperPill(false);
+        trackCanvasInteracted({ action: 'touch_pinch', truck_size: truck.name });
       }
     };
 
     const onNativeTouchMove = (e: TouchEvent) => {
-      if (e.cancelable) {
-        e.preventDefault();
-      }
-
-      if (e.touches.length === 1 && touchPinchDistRef.current === null) {
-        const t = e.touches[0];
-        const dx = t.clientX - touchPanStartRef.current.x;
-        const dy = t.clientY - touchPanStartRef.current.y;
-
-        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-          touchHasDraggedRef.current = true;
+      // 2 or more fingers: prevent native page scroll and perform 3D pan & pinch zoom
+      if (e.touches.length >= 2) {
+        if (e.cancelable) {
+          e.preventDefault();
         }
 
-        const nextPan = {
-          x: panOffsetRef.current.x + dx,
-          y: panOffsetRef.current.y + dy,
-        };
-        panOffsetRef.current = nextPan;
-        setPanOffset(nextPan);
-
-        touchPanStartRef.current = { x: t.clientX, y: t.clientY };
-      } else if (e.touches.length >= 2) {
         const t1 = e.touches[0];
         const t2 = e.touches[1];
         const newDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        const newCenter = {
+          x: (t1.clientX + t2.clientX) / 2,
+          y: (t1.clientY + t2.clientY) / 2,
+        };
+
+        // 2-finger pan delta
+        let panDx = 0;
+        let panDy = 0;
+        if (touchTwoFingerCenterRef.current) {
+          panDx = newCenter.x - touchTwoFingerCenterRef.current.x;
+          panDy = newCenter.y - touchTwoFingerCenterRef.current.y;
+        }
+        touchTwoFingerCenterRef.current = newCenter;
 
         if (touchPinchDistRef.current && touchPinchDistRef.current > 0) {
           const pinchRatio = newDist / touchPinchDistRef.current;
           const currentScale = userScaleRef.current;
           const nextScale = Math.max(0.2, Math.min(4.0, currentScale * pinchRatio));
 
-          if (Math.abs(nextScale - currentScale) > 0.001) {
-            const rect = canvas.getBoundingClientRect();
-            const centerX = (t1.clientX + t2.clientX) / 2 - rect.left;
-            const centerY = (t1.clientY + t2.clientY) / 2 - rect.top;
+          const rect = canvas.getBoundingClientRect();
+          const centerX = newCenter.x - rect.left;
+          const centerY = newCenter.y - rect.top;
 
-            const { baseScale, midX, midY } = baseMetricsRef.current;
-            const currentWorldScale = baseScale * currentScale;
-            const nextWorldScale = baseScale * nextScale;
+          const { baseScale, midX, midY } = baseMetricsRef.current;
+          const currentWorldScale = baseScale * currentScale;
+          const nextWorldScale = baseScale * nextScale;
 
-            const currentPan = panOffsetRef.current;
-            const currentOffsetX = dimensions.width / 2 - midX * currentWorldScale + currentPan.x;
-            const currentOffsetY = dimensions.height / 2 - midY * currentWorldScale + 15 + currentPan.y;
+          const currentPan = panOffsetRef.current;
+          const currentOffsetX = dimensions.width / 2 - midX * currentWorldScale + currentPan.x;
+          const currentOffsetY = dimensions.height / 2 - midY * currentWorldScale + 15 + currentPan.y;
 
-            const ratio = nextWorldScale / currentWorldScale;
-            const nextOffsetX = centerX - (centerX - currentOffsetX) * ratio;
-            const nextOffsetY = centerY - (centerY - currentOffsetY) * ratio;
+          const ratio = nextWorldScale / (currentWorldScale || 1);
+          const nextOffsetX = centerX - (centerX - currentOffsetX) * ratio;
+          const nextOffsetY = centerY - (centerY - currentOffsetY) * ratio;
 
-            const nextPanX = nextOffsetX - (dimensions.width / 2 - midX * nextWorldScale);
-            const nextPanY = nextOffsetY - (dimensions.height / 2 - midY * nextWorldScale + 15);
+          const nextPanX = nextOffsetX - (dimensions.width / 2 - midX * nextWorldScale) + panDx;
+          const nextPanY = nextOffsetY - (dimensions.height / 2 - midY * nextWorldScale + 15) + panDy;
 
-            userScaleRef.current = nextScale;
-            panOffsetRef.current = { x: nextPanX, y: nextPanY };
+          userScaleRef.current = nextScale;
+          panOffsetRef.current = { x: nextPanX, y: nextPanY };
 
-            setUserScale(nextScale);
-            setPanOffset({ x: nextPanX, y: nextPanY });
-          }
+          setUserScale(nextScale);
+          setPanOffset({ x: nextPanX, y: nextPanY });
+        } else if (panDx !== 0 || panDy !== 0) {
+          const nextPan = {
+            x: panOffsetRef.current.x + panDx,
+            y: panOffsetRef.current.y + panDy,
+          };
+          panOffsetRef.current = nextPan;
+          setPanOffset(nextPan);
         }
+
         touchPinchDistRef.current = newDist;
+        return;
+      }
+
+      // Single finger touch: DO NOT preventDefault - allows native vertical page scrolling!
+      if (e.touches.length === 1) {
+        const t = e.touches[0];
+        const dx = t.clientX - touchPanStartRef.current.x;
+        const dy = t.clientY - touchPanStartRef.current.y;
+        if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+          touchHasDraggedRef.current = true;
+        }
       }
     };
 
     const onNativeTouchEnd = (e: TouchEvent) => {
       if (e.touches.length === 0) {
         touchPinchDistRef.current = null;
+        touchTwoFingerCenterRef.current = null;
         if (!touchHasDraggedRef.current && e.changedTouches.length === 1) {
           const rect = canvas.getBoundingClientRect();
           const t = e.changedTouches[0];
@@ -1354,11 +1377,15 @@ export function TruckCanvas({
           }
           setHoveredBlock(hitBlock);
           setMousePos(hitBlock ? tapPoint : null);
+          if (hitBlock) {
+            trackCanvasInteracted({ action: 'item_tap', truck_size: truck.name });
+          }
         }
       } else if (e.touches.length === 1) {
         const t = e.touches[0];
         touchPanStartRef.current = { x: t.clientX, y: t.clientY };
         touchPinchDistRef.current = null;
+        touchTwoFingerCenterRef.current = null;
       }
     };
 
@@ -1385,6 +1412,7 @@ export function TruckCanvas({
     hasDraggedRef.current = false;
     setShowHelperPill(false);
     setIsDragging(true);
+    trackCanvasInteracted({ action: 'mouse_drag', truck_size: truck.name });
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1445,6 +1473,9 @@ export function TruckCanvas({
       if (onSelectBlock) {
         onSelectBlock(hoveredBlock);
       }
+      if (hoveredBlock) {
+        trackCanvasInteracted({ action: 'item_click', truck_size: truck.name });
+      }
     }
     setIsDragging(false);
   };
@@ -1461,9 +1492,11 @@ export function TruckCanvas({
     panOffsetRef.current = { x: 0, y: 0 };
     setUserScale(1.0);
     setPanOffset({ x: 0, y: 0 });
+    trackCanvasInteracted({ action: 'camera_reset', truck_size: truck.name });
   };
 
   const handleZoomIn = () => {
+    trackCanvasInteracted({ action: 'zoom_in', truck_size: truck.name });
     setUserScale((prev) => {
       const next = Math.min(4.0, prev * 1.25);
       userScaleRef.current = next;
@@ -1472,6 +1505,7 @@ export function TruckCanvas({
   };
 
   const handleZoomOut = () => {
+    trackCanvasInteracted({ action: 'zoom_out', truck_size: truck.name });
     setUserScale((prev) => {
       const next = Math.max(0.2, prev / 1.25);
       userScaleRef.current = next;
@@ -1482,8 +1516,8 @@ export function TruckCanvas({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-full min-h-0 bg-[#090A0C] overflow-hidden select-none overscroll-contain touch-none ${className}`}
-      style={{ overscrollBehavior: 'contain', touchAction: 'none' }}
+      className={`relative w-full h-full min-h-0 bg-[#090A0C] overflow-hidden select-none touch-pan-y ${className}`}
+      style={{ touchAction: 'pan-y' }}
     >
       <canvas
         ref={canvasRef}
@@ -1491,21 +1525,22 @@ export function TruckCanvas({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
-        style={{ overscrollBehavior: 'contain', touchAction: 'none' }}
-        className={`w-full h-full block overscroll-contain touch-none ${
+        style={{ touchAction: 'pan-y' }}
+        className={`w-full h-full block touch-pan-y ${
           isDragging ? 'cursor-grabbing' : 'cursor-grab'
         }`}
       />
 
-      {/* Top Ambient Interaction Helper Pill (Desktop only) */}
+      {/* Top Ambient Interaction Helper Pill */}
       <div
-        className={`hidden sm:block absolute top-3.5 left-1/2 -translate-x-1/2 z-20 pointer-events-none transition-all duration-700 ease-out ${
+        className={`absolute top-3.5 left-1/2 -translate-x-1/2 z-20 pointer-events-none transition-all duration-700 ease-out ${
           showHelperPill ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'
         }`}
       >
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111318]/90 border border-[#1F242F] backdrop-blur-md text-[11px] font-medium text-zinc-300 shadow-sm">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111318]/90 border border-[#1F242F] backdrop-blur-md text-[11px] font-medium text-zinc-300 shadow-sm max-w-[92vw]">
           <span className="w-1.5 h-1.5 rounded-full bg-[#0066FF] animate-pulse shrink-0" />
-          <span>Scroll to zoom • Click &amp; drag to pan • Click items to inspect</span>
+          <span className="hidden sm:inline">Scroll to zoom • Click &amp; drag to pan • Click items to inspect</span>
+          <span className="sm:hidden truncate">2 fingers to pan/zoom • Scroll with 1 finger • Tap items</span>
         </div>
       </div>
 

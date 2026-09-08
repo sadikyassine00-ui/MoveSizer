@@ -14,7 +14,7 @@ import { ConversionCard } from '@/components/ui/ConversionCard';
 import { LoadManifestModal } from '@/components/ui/LoadManifestModal';
 import { FooterInfoSection } from '@/components/layout/FooterInfoSection';
 import { NavDrawer } from '@/components/layout/NavDrawer';
-import { trackPresetSelected, trackDwellingSelected } from '@/lib/analytics/events';
+import { trackPresetSelected, trackDwellingSelected, trackEvent } from '@/lib/analytics/events';
 import { Layers, FileText, ChevronUp, ChevronDown, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 interface AppShellProps {
@@ -100,6 +100,7 @@ export function AppShell({
 
       setInventory(newInventory);
       setSelectedBlock(null);
+      trackEvent('preset_selected', { preset_name: preset.name });
       trackPresetSelected(presetId, preset.defaultTruck);
 
       const targetTruck = TRUCKS[preset.defaultTruck];
