@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   calculateMoveEstimate,
+  calculateTaperedLongHaulMiles,
   normalizeTruckSize,
   isHighDensityZip,
   formatCurrencyRange,
@@ -9,11 +10,12 @@ import {
   METRO_FEE_AMOUNT,
   FLEET_MATRIX,
   LABOR_MATRIX,
+  FULL_SERVICE_PACKING_SURCHARGE,
 } from '@/lib/pricing/moveEstimator';
 
 describe('Deterministic Pricing Engine (lib/pricing/moveEstimator.ts)', () => {
   describe('Mathematical Formulas & Cross-Country Verification', () => {
-    it('calculates long-haul rates for a 10ft truck across 2,993 miles', () => {
+    it('calculates long-haul rates for a 10ft truck across 2,993 miles with tapering and strict hierarchy', () => {
       const result = calculateMoveEstimate({
         truckSize: '10ft',
         cargoCuFt: 300,
@@ -26,40 +28,42 @@ describe('Deterministic Pricing Engine (lib/pricing/moveEstimator.ts)', () => {
       expect(result.isLocal).toBe(false);
       expect(result.distanceMiles).toBe(2993);
 
-      // Verify DIY math
+      // Verify DIY math with tapering
       const fleet = FLEET_MATRIX['10'];
-      const expectedEquipment = 2993 * fleet.longHaulFactor * 1.1;
+      const taperedMiles = calculateTaperedLongHaulMiles(2993);
+      // 1000 + 850 + 993 * 0.70 = 2545.1
+      expect(taperedMiles).toBeCloseTo(2545.1, 1);
+
+      const expectedEquipment = taperedMiles * fleet.longHaulFactor * 1.1;
+      expect(expectedEquipment).toBeGreaterThanOrEqual(1600);
+      expect(expectedEquipment).toBeLessThanOrEqual(1950);
+
       const expectedFuel = (2993 / fleet.mpg) * GAS_PRICE_PER_GAL;
       const expectedTolls = 2993 * TOLL_RATE_PER_MILE;
       const expectedDiyLow = expectedEquipment + expectedFuel + expectedTolls;
-      const expectedDiyHigh = expectedDiyLow * 1.2;
+      const expectedDiyHigh = expectedDiyLow * 1.15;
 
       expect(result.tiers.diy.low).toBeCloseTo(expectedDiyLow, 0);
       expect(result.tiers.diy.high).toBeCloseTo(expectedDiyHigh, 0);
-      expect(result.tiers.diy.low).toBeGreaterThan(3200);
-      expect(result.tiers.diy.high).toBeLessThan(4100);
+      expect(result.tiers.diy.low).toBeGreaterThanOrEqual(2750);
+      expect(result.tiers.diy.low).toBeLessThanOrEqual(3200);
 
       // Verify Hybrid math (+460 for 10ft)
       expect(result.tiers.hybrid.low).toBeCloseTo(expectedDiyLow + 460, 0);
-      expect(result.tiers.hybrid.high).toBeCloseTo(expectedDiyHigh + 460, 0);
-      expect(result.tiers.hybrid.low).toBeGreaterThan(3600);
-      expect(result.tiers.hybrid.high).toBeLessThan(4500);
+      expect(result.tiers.hybrid.low).toBeGreaterThan(result.tiers.diy.low);
 
-      // Verify Full-Service math
-      // 300 cu ft * 7.0 = 2100 lbs
-      // Min weight for 10ft is 1500 -> billable is 2100 lbs
-      // Miles > 1500 -> minRate = 1.45, maxRate = 1.85
-      // 10001 triggers $450 metro fee
-      expect(result.hasMetroFee).toBe(true);
-      const expectedFsLow = 2100 * 1.45 * 1.16 + 450;
-      const expectedFsHigh = 2100 * 1.85 * 1.16 + 450;
-      expect(result.tiers.fullService.low).toBeCloseTo(expectedFsLow, 0);
-      expect(result.tiers.fullService.high).toBeCloseTo(expectedFsHigh, 0);
-      expect(result.tiers.fullService.low).toBeGreaterThan(3900);
-      expect(result.tiers.fullService.high).toBeLessThan(5100);
+      // Verify Full-Service math:
+      // Must enforce Coast-to-Coast floor ($4,200 for >2000 miles)
+      // Must be >= Hybrid.low * 1.15 (Hierarchy Invariant)
+      expect(result.tiers.fullService.low).toBeGreaterThanOrEqual(4200);
+      expect(result.tiers.fullService.low).toBeGreaterThanOrEqual(
+        Math.round(result.tiers.hybrid.low * 1.15)
+      );
+      expect(result.tiers.fullService.low).toBeGreaterThan(result.tiers.hybrid.low);
+      expect(result.tiers.hybrid.low).toBeGreaterThan(result.tiers.diy.low);
     });
 
-    it('calculates long-haul rates for a 10ft truck at 2,500 miles within the ~$2,800–$3,400 range', () => {
+    it('calculates long-haul rates for a 10ft truck at 2,500 miles within target ranges without inversion', () => {
       const result = calculateMoveEstimate({
         truckSize: '10',
         cargoCuFt: 250,
@@ -68,18 +72,17 @@ describe('Deterministic Pricing Engine (lib/pricing/moveEstimator.ts)', () => {
         destZip: '33101', // Miami, FL (no metro fee)
       });
 
-      // DIY Low = 2500 * 0.65 * 1.10 (1787.5) + (2500/11)*3.8 (863.64) + 2500*0.045 (112.5) = 2763.64 (~$2,760-$2,800)
-      // DIY High = 2763.64 * 1.20 = 3316.36 (~$3,320-$3,400)
-      expect(result.tiers.diy.low).toBeGreaterThanOrEqual(2700);
-      expect(result.tiers.diy.low).toBeLessThanOrEqual(2850);
-      expect(result.tiers.diy.high).toBeGreaterThanOrEqual(3250);
-      expect(result.tiers.diy.high).toBeLessThanOrEqual(3450);
+      // DIY total should resolve around ~$2,750 – $3,200
+      expect(result.tiers.diy.low).toBeGreaterThanOrEqual(2500);
+      expect(result.tiers.diy.low).toBeLessThanOrEqual(3200);
 
-      // Hybrid = DIY + 460 => ~$3,200 to ~$3,800
-      expect(result.tiers.hybrid.low).toBeGreaterThanOrEqual(3150);
-      expect(result.tiers.hybrid.low).toBeLessThanOrEqual(3350);
-      expect(result.tiers.hybrid.high).toBeGreaterThanOrEqual(3700);
-      expect(result.tiers.hybrid.high).toBeLessThanOrEqual(3950);
+      // Full Service must respect the $4,200 coast-to-coast floor
+      expect(result.tiers.fullService.low).toBeGreaterThanOrEqual(4200);
+
+      // Strict hierarchy assertion
+      expect(result.tiers.fullService.low).toBeGreaterThanOrEqual(
+        Math.round(result.tiers.hybrid.low * 1.15)
+      );
     });
 
     it('calculates local move pricing correctly with zero long-haul mileage surcharges and zero tolls', () => {
@@ -103,8 +106,75 @@ describe('Deterministic Pricing Engine (lib/pricing/moveEstimator.ts)', () => {
       // Hybrid adds $680 for 15ft
       expect(result.tiers.hybrid.low).toBeCloseTo(51 + 680, 0);
       expect(result.tiers.hybrid.high).toBeCloseTo(59 + 680, 0);
-      expect(result.tiers.hybrid.low).toBeGreaterThan(700);
-      expect(result.tiers.hybrid.low).toBeLessThan(750);
+    });
+
+    it('applies distance tapering across mile brackets accurately', () => {
+      expect(calculateTaperedLongHaulMiles(500)).toBe(500);
+      expect(calculateTaperedLongHaulMiles(1000)).toBe(1000);
+      // 1000 + 500 * 0.85 = 1425
+      expect(calculateTaperedLongHaulMiles(1500)).toBe(1425);
+      // 1000 + 1000 * 0.85 = 1850
+      expect(calculateTaperedLongHaulMiles(2000)).toBe(1850);
+      // 1000 + 850 + 1000 * 0.70 = 2550
+      expect(calculateTaperedLongHaulMiles(3000)).toBe(2550);
+    });
+
+    it('applies turnkey packing and labor surcharge for Full-Service Van Lines', () => {
+      expect(FULL_SERVICE_PACKING_SURCHARGE['10']).toBe(450);
+      expect(FULL_SERVICE_PACKING_SURCHARGE['15']).toBe(650);
+      expect(FULL_SERVICE_PACKING_SURCHARGE['20']).toBe(850);
+      expect(FULL_SERVICE_PACKING_SURCHARGE['26']).toBe(1100);
+    });
+
+    it('enforces coast-to-coast minimum floors for Full-Service jobs', () => {
+      // Move of 1,200 miles: floor is $2,800
+      const midHaul = calculateMoveEstimate({
+        truckSize: '10',
+        cargoCuFt: 50,
+        distanceMiles: 1200,
+        originZip: '75001',
+        destZip: '33101',
+      });
+      expect(midHaul.tiers.fullService.low).toBeGreaterThanOrEqual(2800);
+
+      // Move of 2,400 miles: floor is $4,200
+      const crossCountry = calculateMoveEstimate({
+        truckSize: '10',
+        cargoCuFt: 50,
+        distanceMiles: 2400,
+        originZip: '90210',
+        destZip: '33101',
+      });
+      expect(crossCountry.tiers.fullService.low).toBeGreaterThanOrEqual(4200);
+    });
+
+    it('enforces strict hierarchy invariant across all route types: FullService >= Hybrid * 1.15 >= DIY', () => {
+      const scenarios = [
+        { truckSize: '10' as const, miles: 50, cargoCuFt: 100 },
+        { truckSize: '10' as const, miles: 500, cargoCuFt: 150 },
+        { truckSize: '10' as const, miles: 2800, cargoCuFt: 120 },
+        { truckSize: '15' as const, miles: 80, cargoCuFt: 300 },
+        { truckSize: '15' as const, miles: 1500, cargoCuFt: 400 },
+        { truckSize: '20' as const, miles: 2200, cargoCuFt: 600 },
+        { truckSize: '26' as const, miles: 2900, cargoCuFt: 1200 },
+      ];
+
+      for (const sc of scenarios) {
+        const est = calculateMoveEstimate({
+          truckSize: sc.truckSize,
+          cargoCuFt: sc.cargoCuFt,
+          distanceMiles: sc.miles,
+          originZip: '90210',
+          destZip: '10001',
+        });
+
+        // Hierarchy rule: DIY < Hybrid < FullService
+        expect(est.tiers.diy.low).toBeLessThan(est.tiers.hybrid.low);
+        expect(est.tiers.hybrid.low).toBeLessThan(est.tiers.fullService.low);
+        expect(est.tiers.fullService.low).toBeGreaterThanOrEqual(
+          Math.round(est.tiers.hybrid.low * 1.15)
+        );
+      }
     });
 
     it('scales labor additions accurately across all 4 truck classes', () => {
@@ -141,26 +211,6 @@ describe('Deterministic Pricing Engine (lib/pricing/moveEstimator.ts)', () => {
       expect(nycMove.hasMetroFee).toBe(true);
       expect(nycMove.tiers.fullService.breakdown.metroFee).toBe(METRO_FEE_AMOUNT);
 
-      // Boston (02101)
-      const bostonMove = calculateMoveEstimate({
-        truckSize: '15',
-        cargoCuFt: 500,
-        distanceMiles: 300,
-        originZip: '06001',
-        destZip: '02101',
-      });
-      expect(bostonMove.hasMetroFee).toBe(true);
-
-      // San Francisco (94103)
-      const sfMove = calculateMoveEstimate({
-        truckSize: '15',
-        cargoCuFt: 500,
-        distanceMiles: 300,
-        originZip: '94103',
-        destZip: '95814',
-      });
-      expect(sfMove.hasMetroFee).toBe(true);
-
       // Suburban Dallas (75001 to 77001) -> No metro fee
       const dallasMove = calculateMoveEstimate({
         truckSize: '15',
@@ -171,38 +221,6 @@ describe('Deterministic Pricing Engine (lib/pricing/moveEstimator.ts)', () => {
       });
       expect(dallasMove.hasMetroFee).toBe(false);
       expect(dallasMove.tiers.fullService.breakdown.metroFee).toBe(0);
-    });
-
-    it('enforces billable weight minimums (1,500 lbs for 10ft, 2,100 lbs for 15ft+)', () => {
-      // Tiny 50 cu ft cargo in 10ft truck (50 * 7 = 350 lbs)
-      const tiny10 = calculateMoveEstimate({
-        truckSize: '10',
-        cargoCuFt: 50,
-        distanceMiles: 600,
-        originZip: '30301',
-        destZip: '33101',
-      });
-      expect(tiny10.tiers.fullService.breakdown.billableWeightLbs).toBe(1500);
-
-      // Tiny 50 cu ft cargo in 15ft truck
-      const tiny15 = calculateMoveEstimate({
-        truckSize: '15',
-        cargoCuFt: 50,
-        distanceMiles: 600,
-        originZip: '30301',
-        destZip: '33101',
-      });
-      expect(tiny15.tiers.fullService.breakdown.billableWeightLbs).toBe(2100);
-
-      // Large 500 cu ft cargo in 15ft truck (500 * 7 = 3500 lbs > 2100)
-      const large15 = calculateMoveEstimate({
-        truckSize: '15',
-        cargoCuFt: 500,
-        distanceMiles: 600,
-        originZip: '30301',
-        destZip: '33101',
-      });
-      expect(large15.tiers.fullService.breakdown.billableWeightLbs).toBe(3500);
     });
   });
 

@@ -129,6 +129,29 @@ export const LABOR_MATRIX: Record<TruckSizeCode, LaborSpec> = {
   },
 };
 
+export const FULL_SERVICE_PACKING_SURCHARGE: Record<TruckSizeCode, number> = {
+  '10': 450,
+  '15': 650,
+  '20': 850,
+  '26': 1100,
+};
+
+/**
+ * Calculates long-haul tapered miles:
+ * Miles 100 to 1,000: 100% of class rate.
+ * Miles 1,001 to 2,000: 85% of class rate.
+ * Miles > 2,000: 70% of class rate.
+ */
+export function calculateTaperedLongHaulMiles(miles: number): number {
+  if (miles <= 1000) {
+    return miles;
+  }
+  const tier1 = 1000;
+  const tier2 = Math.min(miles - 1000, 1000);
+  const tier3 = miles > 2000 ? miles - 2000 : 0;
+  return tier1 * 1.0 + tier2 * 0.85 + tier3 * 0.7;
+}
+
 /**
  * Normalizes input truck size string to valid code ('10' | '15' | '20' | '26')
  */
@@ -189,11 +212,12 @@ export function calculateMoveEstimate(input: MoveEstimatorInput): MoveEstimateRe
     diyLow = equipmentCost + fuelCost;
     diyHigh = diyLow * 1.15;
   } else {
-    equipmentCost = miles * fleet.longHaulFactor * 1.1;
+    const taperedMiles = calculateTaperedLongHaulMiles(miles);
+    equipmentCost = taperedMiles * fleet.longHaulFactor * 1.1;
     fuelCost = (miles / fleet.mpg) * GAS_PRICE_PER_GAL;
     tollsCost = miles * TOLL_RATE_PER_MILE;
     diyLow = equipmentCost + fuelCost + tollsCost;
-    diyHigh = diyLow * 1.2;
+    diyHigh = diyLow * 1.15;
   }
 
   // -------------------------------------------------------------------------
@@ -208,6 +232,7 @@ export function calculateMoveEstimate(input: MoveEstimatorInput): MoveEstimateRe
   const estimatedWeight = cargoCuFt * 7.0; // standard 7 lbs/cu ft moving tariff factor
   const minWeight = size === '10' ? 1500 : 2100;
   const billableWeight = Math.max(estimatedWeight, minWeight);
+  const packingLaborSurcharge = FULL_SERVICE_PACKING_SURCHARGE[size];
 
   let minRate: number;
   let maxRate: number;
@@ -223,8 +248,27 @@ export function calculateMoveEstimate(input: MoveEstimatorInput): MoveEstimateRe
     maxRate = 1.0;
   }
 
-  const fullServiceLow = billableWeight * minRate * (1 + FUEL_SURCHARGE_INDEX) + metroFee;
-  const fullServiceHigh = billableWeight * maxRate * (1 + FUEL_SURCHARGE_INDEX) + metroFee;
+  let fullServiceLow =
+    billableWeight * minRate * (1 + FUEL_SURCHARGE_INDEX) + packingLaborSurcharge + metroFee;
+  let fullServiceHigh =
+    billableWeight * maxRate * (1 + FUEL_SURCHARGE_INDEX) + packingLaborSurcharge + metroFee;
+
+  // Enforce Coast-to-Coast Minimum Floor
+  if (miles > 2000) {
+    fullServiceLow = Math.max(fullServiceLow, 4200);
+  } else if (miles > 1000) {
+    fullServiceLow = Math.max(fullServiceLow, 2800);
+  }
+
+  // Enforce Strict Hierarchy Invariant: FullService.low MUST always be >= Hybrid.low * 1.15
+  if (fullServiceLow < hybridLow * 1.15) {
+    fullServiceLow = Math.round(hybridLow * 1.18);
+  }
+
+  // Ensure high is strictly greater than low with realistic commercial variance window
+  if (fullServiceHigh < fullServiceLow * 1.2) {
+    fullServiceHigh = Math.round(fullServiceLow * 1.22);
+  }
 
   return {
     truckSize: size,
@@ -297,10 +341,12 @@ export function calculateMoveEstimate(input: MoveEstimatorInput): MoveEstimateRe
           linehaulMinRate: minRate,
           linehaulMaxRate: maxRate,
           fuelSurchargePct: FUEL_SURCHARGE_INDEX * 100,
+          packingLaborSurcharge,
           metroFee,
         },
         notes: [
           `Billable weight: ${billableWeight.toLocaleString()} lbs (tariff rate $${minRate.toFixed(2)}–$${maxRate.toFixed(2)}/lb)`,
+          `Turnkey packing & materials surcharge: +$${packingLaborSurcharge} included`,
           `Carrier fuel surcharge index: 16% included`,
           hasMetroFee
             ? `High-density metro surcharge: +$${METRO_FEE_AMOUNT} included (parking/shuttle access)`
