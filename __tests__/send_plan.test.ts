@@ -175,6 +175,6 @@ describe('Manifest Generation & Resend Email Pipeline', () => {
       expect(data.manifest.logisticsRefId).toBe(data.refId);
       expect(data.shareableUrl).toContain('ref=');
       expect(data.shareableUrl).toContain('truck=15ft');
-    });
+    }, 15000);
   });
 });

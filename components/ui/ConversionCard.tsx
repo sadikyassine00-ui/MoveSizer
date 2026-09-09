@@ -89,6 +89,7 @@ export function ConversionCard({
     estimate: MoveEstimateResult;
     shareableUrl: string;
     emailDispatched: boolean;
+    emailError?: string;
   } | null>(null);
 
   const [copiedLink, setCopiedLink] = useState(false);
@@ -241,6 +242,7 @@ export function ConversionCard({
         estimate: data.estimate || estimate,
         shareableUrl: data.shareableUrl,
         emailDispatched: !!data.emailDispatched,
+        emailError: data.emailError,
       });
 
       trackQuoteFormSubmitted(
@@ -330,20 +332,47 @@ export function ConversionCard({
           /* ========================================================================= */
           <div className="space-y-4">
             {/* Instant Confirmation Badge */}
-            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-1">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="text-xs font-bold">
-                  ✓ Manifest generated &amp; dispatched
-                </span>
+            {submissionResult.emailDispatched ? (
+              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-1.5 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-xs font-bold text-white">
+                    ✓ Official Load Manifest Emailed
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-300 pl-6 leading-relaxed">
+                  Logistics blueprint sent to <span className="font-semibold text-white">{email}</span>. Ref: <span className="font-mono font-bold text-emerald-400">{submissionResult.refId}</span>
+                </p>
+                <p className="text-[10px] text-zinc-400 pl-6">
+                  Check your inbox for the complete itemized checklist, box supply list, and rate breakdown. (Check spam/junk if not received within 60s).
+                </p>
               </div>
-              <p className="text-[11px] text-emerald-400/90 pl-6 leading-relaxed">
-                Logistics blueprint sent to <span className="font-semibold text-white">{email}</span>. Ref: <span className="font-mono font-bold text-white">{submissionResult.refId}</span>
-              </p>
-            </div>
+            ) : (
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-1.5 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="text-xs font-bold text-white">
+                    Manifest Created (Email Delivery Delayed)
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-300 pl-6 leading-relaxed">
+                  Ref: <span className="font-mono font-bold text-white">{submissionResult.refId}</span>. Direct email delivery encountered a temporary delay ({submissionResult.emailError || 'Delivery pending'}).
+                </p>
+                <p className="text-[10px] text-amber-400 pl-6 font-medium">
+                  Your full Load Manifest and rate analysis are ready below for instant viewing and PDF export:
+                </p>
+              </div>
+            )}
 
             {/* ACTION BUTTONS: Instant On-Screen Utility */}
             <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between px-0.5">
+                <span className="text-[10px] uppercase font-mono tracking-wider text-neutral-400 font-bold">
+                  On-Screen Manifest Access
+                </span>
+                <span className="text-[10px] text-neutral-500 font-mono">Print-Ready</span>
+              </div>
+
               {/* Primary Action Button (High Contrast) */}
               <button
                 type="button"
@@ -358,7 +387,7 @@ export function ConversionCard({
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg bg-white hover:bg-zinc-100 text-neutral-950 text-xs font-bold transition-all shadow-md active:scale-[0.98] cursor-pointer"
               >
                 <FileText className="w-4 h-4 text-orange-600" />
-                <span>📄 View &amp; Download Load Manifest (PDF)</span>
+                <span>📄 View &amp; Print Load Manifest (PDF)</span>
               </button>
 
               {/* Secondary Utility Action: Shareable Link */}
