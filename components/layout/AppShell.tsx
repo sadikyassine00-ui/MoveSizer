@@ -148,13 +148,15 @@ export function AppShell({
     [density]
   );
 
-  // Auto-hydrate state from URL query parameters (e.g. ?truck=15ft&preset=1-2_bed)
+  // Auto-hydrate state from URL query parameters (e.g. ?truck=15ft&preset=1-2_bed&items=...)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
       const search = new URLSearchParams(window.location.search);
       const urlTruck = search.get('truck') || search.get('truckSize') || search.get('size');
       const urlPreset = search.get('preset') || search.get('presetType') || search.get('load');
+      const urlItems = search.get('items');
+      const urlRef = search.get('ref');
 
       const parsedTruck = resolveTruckId(urlTruck || undefined);
       const parsedPreset = resolvePresetId(urlPreset || undefined);
@@ -164,6 +166,25 @@ export function AppShell({
       }
       if (parsedTruck) {
         setSelectedTruckId(parsedTruck);
+      }
+      if (urlItems) {
+        try {
+          const parsedInventory = JSON.parse(decodeURIComponent(urlItems));
+          if (typeof parsedInventory === 'object' && parsedInventory !== null) {
+            setInventory((prev) => ({
+              ...prev,
+              ...parsedInventory,
+            }));
+          }
+        } catch {
+          // safe fallback for malformed payload
+        }
+      }
+      if (urlRef) {
+        setManifestData((prev) => ({
+          ...prev,
+          leadId: urlRef,
+        }));
       }
     } catch {
       // safe fallback for SSR

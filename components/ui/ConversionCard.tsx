@@ -4,12 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { TruckSpec } from '@/lib/constants/trucks';
 import { CapacityCalculationResult } from '@/lib/engine/capacityEngine';
 import { CustomItemInput } from '@/lib/engine/packEngine';
-import { calculateRoutePricing, RoutePricingResult } from '@/lib/engine/pricingEngine';
+import { calculateRoadDistanceMiles } from '@/lib/engine/pricingEngine';
+import {
+  calculateMoveEstimate,
+  MoveEstimateResult,
+} from '@/lib/pricing/moveEstimator';
+import { LoadManifestDataObject } from '@/lib/manifest/generateManifest';
 import {
   ShieldCheck,
-  Lock,
-  FileCheck,
-  ArrowRight,
   CheckCircle,
   FileText,
   AlertCircle,
@@ -17,6 +19,14 @@ import {
   MapPin,
   Mail,
   Loader2,
+  Copy,
+  Check,
+  ExternalLink,
+  ArrowRight,
+  Truck,
+  Users,
+  Building,
+  RotateCcw,
 } from 'lucide-react';
 import {
   trackQuoteStep2Reached,
@@ -44,6 +54,7 @@ interface ConversionCardProps {
 
 const ZIP_REGEX = /^\d{5}$/;
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
 export function ConversionCard({
   truck,
   capacityResult,
@@ -61,26 +72,42 @@ export function ConversionCard({
   const [moveDate, setMoveDate] = useState('');
   const [email, setEmail] = useState('');
 
-  const [pricingResult, setPricingResult] = useState<RoutePricingResult | null>(null);
+  const [roadMiles, setRoadMiles] = useState<number>(250);
+  const [originPlace, setOriginPlace] = useState<string | undefined>();
+  const [destinationPlace, setDestinationPlace] = useState<string | undefined>();
+
+  const [estimate, setEstimate] = useState<MoveEstimateResult | null>(null);
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [leadResult, setLeadResult] = useState<{
-    leadId: string;
-    priceRange: { low: number; high: number; formatted: string };
+
+  // Post-submission result state
+  const [submissionResult, setSubmissionResult] = useState<{
+    refId: string;
+    manifest: LoadManifestDataObject;
+    estimate: MoveEstimateResult;
+    shareableUrl: string;
+    emailDispatched: boolean;
   } | null>(null);
+
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // Keep pricing synced when truck size changes while in Step 2
+  // Re-calculate move estimate if truck size or cargo volume changes while in Step 2 or after submit
   useEffect(() => {
-    if (step === 2 && originZip && destinationZip && ZIP_REGEX.test(originZip) && ZIP_REGEX.test(destinationZip)) {
-      calculateRoutePricing(originZip.trim(), destinationZip.trim(), truck.id).then((res) => {
-        setPricingResult(res);
+    if (originZip && destinationZip && ZIP_REGEX.test(originZip) && ZIP_REGEX.test(destinationZip)) {
+      const updatedEstimate = calculateMoveEstimate({
+        truckSize: truck.id,
+        cargoCuFt: capacityResult.totalVolumeCuFt,
+        distanceMiles: roadMiles,
+        originZip,
+        destZip: destinationZip,
       });
+      setEstimate(updatedEstimate);
     }
-  }, [truck.id, step, originZip, destinationZip]);
+  }, [truck.id, capacityResult.totalVolumeCuFt, roadMiles, originZip, destinationZip]);
 
   // Validate Step 1 (ZIPs)
   const validateStep1 = () => {
@@ -122,25 +149,34 @@ export function ConversionCard({
     return Object.keys(errs).length === 0;
   };
 
+  // Step 1 Submit: Calculate Route & Distance
   const handleStep1Proceed = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateStep1()) return;
 
     setIsCalculatingRoute(true);
     try {
-      const pricing = await calculateRoutePricing(
-        originZip.trim(),
-        destinationZip.trim(),
-        truck.id
-      );
-      setPricingResult(pricing);
+      const distance = await calculateRoadDistanceMiles(originZip.trim(), destinationZip.trim());
+      setRoadMiles(distance.roadMiles);
+      setOriginPlace(distance.originPlace);
+      setDestinationPlace(distance.destinationPlace);
+
+      const computedEstimate = calculateMoveEstimate({
+        truckSize: truck.id,
+        cargoCuFt: capacityResult.totalVolumeCuFt,
+        distanceMiles: distance.roadMiles,
+        originZip: originZip.trim(),
+        destZip: destinationZip.trim(),
+      });
+      setEstimate(computedEstimate);
+
       setStep(2);
       trackQuoteStep2Reached(originZip.trim(), destinationZip.trim(), truck.id);
       trackRouteCalculated({
         originZip: originZip.trim(),
         destinationZip: destinationZip.trim(),
-        roadMiles: pricing.roadMiles,
-        isLocal: pricing.isLocal,
+        roadMiles: distance.roadMiles,
+        isLocal: distance.roadMiles < 100,
       });
       trackDwellingSelected({
         dwelling: dwellingType || 'custom',
@@ -148,32 +184,29 @@ export function ConversionCard({
         truckSize: truck.id,
       });
     } catch {
-      // Graceful degradation
+      // Fallback
       setStep(2);
-      trackQuoteStep2Reached(originZip.trim(), destinationZip.trim(), truck.id);
-      trackRouteCalculated({
-        originZip: originZip.trim(),
-        destinationZip: destinationZip.trim(),
-        roadMiles: 250,
-        isLocal: false,
-      });
-      trackDwellingSelected({
-        dwelling: dwellingType || 'custom',
-        estimatedCuFt: capacityResult.totalVolumeCuFt,
+      const fallbackEstimate = calculateMoveEstimate({
         truckSize: truck.id,
+        cargoCuFt: capacityResult.totalVolumeCuFt,
+        distanceMiles: 250,
+        originZip: originZip.trim(),
+        destZip: destinationZip.trim(),
       });
+      setEstimate(fallbackEstimate);
     } finally {
       setIsCalculatingRoute(false);
     }
   };
 
+  // Step 2 Submit: Call /api/send-plan
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateStep1() || !validateStep2()) return;
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/lead', {
+      const response = await fetch('/api/send-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -181,26 +214,37 @@ export function ConversionCard({
           destinationZip: destinationZip.trim(),
           moveDate,
           email: email.trim(),
-          cuFt: capacityResult.totalVolumeCuFt,
           truckSize: truck.id,
-          safetyBuffer: 18,
+          cargoCuFt: capacityResult.totalVolumeCuFt,
           inventorySummary: inventory,
+          customItems: customItems.map((c) => ({
+            id: c.id,
+            name: c.name,
+            length: c.length,
+            width: c.width,
+            height: c.height,
+            quantity: c.quantity,
+          })),
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to submit quote request.');
+        throw new Error(errorData.error || 'Failed to generate move plan.');
       }
 
       const data = await response.json();
-      setLeadResult({
-        leadId: data.leadId,
-        priceRange: data.priceRange,
+
+      setSubmissionResult({
+        refId: data.refId || data.leadId,
+        manifest: data.manifest,
+        estimate: data.estimate || estimate,
+        shareableUrl: data.shareableUrl,
+        emailDispatched: !!data.emailDispatched,
       });
 
       trackQuoteFormSubmitted(
-        data.leadId,
+        data.refId,
         truck.id,
         capacityResult.totalVolumeCuFt,
         originZip.trim(),
@@ -208,12 +252,12 @@ export function ConversionCard({
       );
 
       trackLeadSubmitted({
-        leadId: data.leadId,
+        leadId: data.refId,
         dwellingType: dwellingType || 'custom',
         truckSize: truck.id,
         originZip: originZip.trim(),
         destinationZip: destinationZip.trim(),
-        distanceMiles: pricingResult?.roadMiles,
+        distanceMiles: roadMiles,
         cuFt: capacityResult.totalVolumeCuFt,
       });
     } catch (err: unknown) {
@@ -222,6 +266,22 @@ export function ConversionCard({
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCopyShareableLink = async () => {
+    const urlToCopy =
+      submissionResult?.shareableUrl ||
+      `${window.location.origin}/?ref=${encodeURIComponent(
+        submissionResult?.refId || 'TS-PLAN'
+      )}&truck=${encodeURIComponent(truck.id)}`;
+
+    try {
+      await navigator.clipboard.writeText(urlToCopy);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    } catch {
+      // Fallback
     }
   };
 
@@ -236,7 +296,7 @@ export function ConversionCard({
             Move Summary &amp; Rates
           </h2>
           <span className="text-[10px] font-mono uppercase text-neutral-400 bg-neutral-950 px-2 py-0.5 rounded border border-neutral-800">
-            Step {step} of 2
+            {submissionResult ? 'Verified Plan' : `Step ${step} of 2`}
           </span>
         </div>
 
@@ -262,90 +322,214 @@ export function ConversionCard({
         </div>
       </div>
 
-
-      {/* 2. Form or Confirmation View */}
+      {/* 2. Form or Post-Submission View */}
       <div className="p-4 flex-1">
-        {leadResult ? (
-          /* Confirmation State */
-          <div className="space-y-4 text-center py-2">
-            <div className="w-9 h-9 mx-auto rounded-full bg-emerald-500/20 border border-emerald-500 flex items-center justify-center text-emerald-400">
-              <CheckCircle className="w-5 h-5" strokeWidth={1.75} />
-            </div>
-
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-white">Rate Estimate Dispatched</h3>
-              <p className="text-xs text-neutral-400">
-                Verified commercial movers matching your {truck.name} capacity profile.
+        {submissionResult ? (
+          /* ========================================================================= */
+          /* POST-SUBMISSION VIEW: Instant Manifest Access & 3-Tier Moving Rates       */
+          /* ========================================================================= */
+          <div className="space-y-4">
+            {/* Instant Confirmation Badge */}
+            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-1">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="text-xs font-bold">
+                  ✓ Manifest generated &amp; dispatched
+                </span>
+              </div>
+              <p className="text-[11px] text-emerald-400/90 pl-6 leading-relaxed">
+                Logistics blueprint sent to <span className="font-semibold text-white">{email}</span>. Ref: <span className="font-mono font-bold text-white">{submissionResult.refId}</span>
               </p>
             </div>
 
-            {/* Estimated Price Range Banner */}
-            <div className="p-3.5 rounded-md bg-neutral-950 border border-neutral-800 text-left space-y-2">
-              <div className="flex items-center justify-between text-xs text-neutral-400">
-                <span className="text-[10px] uppercase tracking-wider font-semibold">ESTIMATED PRICE RANGE</span>
-                <span className="font-mono text-emerald-400 font-semibold text-xs">{leadResult.leadId}</span>
-              </div>
-              <div className="text-xl font-bold text-white tracking-tight font-mono tabular-nums">
-                {leadResult.priceRange.formatted}
-              </div>
-              <div className="text-[11px] text-neutral-400">
-                Based on {truck.name} capacity ({capacityResult.totalVolumeCuFt} cu ft cargo) and ~{pricingResult?.roadMiles.toLocaleString() || '250'} road miles from ZIP {originZip} to {destinationZip}.
-              </div>
-            </div>
-
-            {/* Action Buttons */}
+            {/* ACTION BUTTONS: Instant On-Screen Utility */}
             <div className="space-y-2 pt-1">
+              {/* Primary Action Button (High Contrast) */}
               <button
                 type="button"
                 onClick={() =>
                   onOpenManifest?.({
-                    leadId: leadResult.leadId,
+                    leadId: submissionResult.refId,
                     originZip,
                     destinationZip,
                     moveDate,
                   })
                 }
-                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors duration-150"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg bg-white hover:bg-zinc-100 text-neutral-950 text-xs font-bold transition-all shadow-md active:scale-[0.98] cursor-pointer"
               >
-                <FileText className="w-3.5 h-3.5" strokeWidth={1.5} />
-                <span>View &amp; Print Load Manifest</span>
+                <FileText className="w-4 h-4 text-orange-600" />
+                <span>📄 View &amp; Download Load Manifest (PDF)</span>
               </button>
 
-              {/* Outbound Verified Carrier Affiliate Partner Link */}
-              <a
-                href="https://www.moving.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() =>
-                  trackAffiliateClick({
-                    partnerName: 'MovingNetwork',
-                    placement: 'confirmation_card',
-                    url: 'https://www.moving.com',
-                  })
-                }
-                className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-md text-xs font-semibold text-neutral-200 hover:text-white bg-neutral-800 hover:bg-neutral-700 transition-colors duration-150"
-              >
-                <span>Compare Carrier Quotes on Moving.com</span>
-                <ArrowRight className="w-3.5 h-3.5 text-orange-500" strokeWidth={1.5} />
-              </a>
-
+              {/* Secondary Utility Action: Shareable Link */}
               <button
                 type="button"
-                onClick={() => {
-                  setLeadResult(null);
-                  setStep(1);
-                }}
-                className="w-full py-1.5 px-3 rounded-md text-xs font-medium text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors duration-150"
+                onClick={handleCopyShareableLink}
+                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-neutral-950 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700 text-xs font-medium transition-colors cursor-pointer"
               >
-                Calculate Another Route
+                {copiedLink ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-emerald-400 font-semibold">Copied Blueprint Link!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-neutral-400" />
+                    <span>🔗 Copy Shareable Blueprint Link</span>
+                  </>
+                )}
               </button>
             </div>
+
+            {/* SECTION HEADING: 3-Way Verified Rate Breakdown */}
+            <div className="pt-2 border-t border-neutral-800 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-neutral-400 font-bold">
+                  Verified Moving Rates (~{roadMiles.toLocaleString()} mi)
+                </span>
+              </div>
+              <p className="text-[11px] text-neutral-400">
+                Compare self-drive vs. hybrid vs. full-service options for your inventory.
+              </p>
+            </div>
+
+            {/* COLOR-CODED TIER CARDS */}
+            <div className="space-y-3">
+              {/* TIER 1: DIY Truck Rental (Emerald Green Accent) */}
+              <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:border-emerald-500/50 transition-colors space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-emerald-400">
+                    <Truck className="w-3.5 h-3.5" />
+                    <span className="text-xs font-bold text-white">DIY Truck Rental</span>
+                  </div>
+                  <span className="text-[9px] font-mono uppercase font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    SELF-DRIVE BUDGET
+                  </span>
+                </div>
+                <div className="text-lg font-black font-mono text-emerald-300 tabular-nums">
+                  {submissionResult.estimate.tiers.diy.formatted}
+                </div>
+                <p className="text-[11px] text-zinc-300 leading-snug">
+                  Includes truck rental, estimated fuel, and highway tolls.
+                </p>
+                <div className="text-[10px] text-emerald-400/80 font-mono pt-1 border-t border-emerald-500/20">
+                  Fuel: ~${submissionResult.estimate.tiers.diy.breakdown.estimatedFuel} • Tolls: ~${submissionResult.estimate.tiers.diy.breakdown.estimatedTolls}
+                </div>
+                <a
+                  href="https://www.budgettruck.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() =>
+                    trackAffiliateClick({
+                      partnerName: 'BudgetTruck',
+                      placement: 'tier_card_diy',
+                      url: 'https://www.budgettruck.com',
+                    })
+                  }
+                  className="w-full mt-1.5 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs transition-colors"
+                >
+                  <span>Check Truck Rates &rarr;</span>
+                </a>
+              </div>
+
+              {/* TIER 2: Hybrid Move (Sky Blue Accent) */}
+              <div className="p-3 rounded-xl border border-sky-500/30 bg-sky-500/10 hover:border-sky-500/50 transition-colors space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-sky-400">
+                    <Users className="w-3.5 h-3.5" />
+                    <span className="text-xs font-bold text-white">Hybrid Move</span>
+                  </div>
+                  <span className="text-[9px] font-mono uppercase font-bold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                    MOST POPULAR
+                  </span>
+                </div>
+                <div className="text-lg font-black font-mono text-sky-300 tabular-nums">
+                  {submissionResult.estimate.tiers.hybrid.formatted}
+                </div>
+                <p className="text-[11px] text-zinc-300 leading-snug">
+                  Rent the truck yourself + hire 2 vetted helpers to load &amp; unload.
+                </p>
+                <div className="text-[10px] text-sky-400/80 font-mono pt-1 border-t border-sky-500/20">
+                  Truck baseline + ${submissionResult.estimate.tiers.hybrid.breakdown.laborCost} pro loading crew
+                </div>
+                <a
+                  href="https://www.hireahelper.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() =>
+                    trackAffiliateClick({
+                      partnerName: 'HireAHelper',
+                      placement: 'tier_card_hybrid',
+                      url: 'https://www.hireahelper.com',
+                    })
+                  }
+                  className="w-full mt-1.5 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded bg-sky-500 hover:bg-sky-400 text-neutral-950 font-bold text-xs transition-colors"
+                >
+                  <span>Find Local Helpers &rarr;</span>
+                </a>
+              </div>
+
+              {/* TIER 3: Full-Service Van Lines (Purple / Amber Accent) */}
+              <div className="p-3 rounded-xl border border-purple-500/30 bg-purple-500/10 hover:border-purple-500/50 transition-colors space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-purple-400">
+                    <Building className="w-3.5 h-3.5" />
+                    <span className="text-xs font-bold text-white">Full-Service Van Lines</span>
+                  </div>
+                  <span className="text-[9px] font-mono uppercase font-bold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                    TURNKEY / ZERO-EFFORT
+                  </span>
+                </div>
+                <div className="text-lg font-black font-mono text-purple-300 tabular-nums">
+                  {submissionResult.estimate.tiers.fullService.formatted}
+                </div>
+                <p className="text-[11px] text-zinc-300 leading-snug">
+                  Licensed commercial carrier handling packing, driving, and delivery.
+                </p>
+                <div className="text-[10px] text-purple-400/80 font-mono pt-1 border-t border-purple-500/20">
+                  Standard tariff on {submissionResult.estimate.tiers.fullService.breakdown.billableWeightLbs?.toLocaleString()} lbs billable weight
+                </div>
+                <a
+                  href="https://www.moving.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() =>
+                    trackAffiliateClick({
+                      partnerName: 'MovingNetwork',
+                      placement: 'tier_card_full_service',
+                      url: 'https://www.moving.com',
+                    })
+                  }
+                  className="w-full mt-1.5 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded bg-purple-500 hover:bg-purple-400 text-neutral-950 font-bold text-xs transition-colors"
+                >
+                  <span>Compare Carrier Quotes &rarr;</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Reset Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setSubmissionResult(null);
+                setStep(1);
+              }}
+              className="w-full py-2 px-3 rounded-lg text-xs font-medium text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Calculate Another Route</span>
+            </button>
           </div>
         ) : (
-          /* Progressive 2-Step Micro-Commitment Form */
-          <form onSubmit={step === 1 ? handleStep1Proceed : handleFinalSubmit} className="space-y-4">
+          /* ========================================================================= */
+          /* 2-STEP PROGRESSIVE FORM: Step 1 (ZIPs) -> Step 2 (Date & Email)            */
+          /* ========================================================================= */
+          <form
+            onSubmit={step === 1 ? handleStep1Proceed : handleFinalSubmit}
+            className="space-y-4"
+          >
             {errors.form && (
-              <div className="p-2 rounded-md bg-red-500/15 border border-red-500/40 text-xs text-red-400 flex items-center gap-2">
+              <div className="p-2.5 rounded-md bg-red-500/15 border border-red-500/40 text-xs text-red-400 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" strokeWidth={1.5} />
                 <span>{errors.form}</span>
               </div>
@@ -355,12 +539,17 @@ export function ConversionCard({
             <div className="space-y-3.5">
               {/* Origin ZIP */}
               <div className="space-y-1.5">
-                <label htmlFor="origin-zip" className="text-xs font-medium text-neutral-300 flex items-center justify-between">
+                <label
+                  htmlFor="origin-zip"
+                  className="text-xs font-medium text-neutral-300 flex items-center justify-between"
+                >
                   <span className="flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-orange-500" />
                     Origin ZIP
                   </span>
-                  <span className="text-[10px] text-neutral-500 font-mono">Moving From</span>
+                  <span className="text-[10px] text-neutral-500 font-mono">
+                    Moving From
+                  </span>
                 </label>
                 <input
                   id="origin-zip"
@@ -369,7 +558,8 @@ export function ConversionCard({
                   value={originZip}
                   onChange={(e) => {
                     setOriginZip(e.target.value.replace(/\D/g, ''));
-                    if (errors.originZip) setErrors((prev) => ({ ...prev, originZip: '' }));
+                    if (errors.originZip)
+                      setErrors((prev) => ({ ...prev, originZip: '' }));
                   }}
                   placeholder="e.g. 90210"
                   className={`w-full bg-neutral-950 border ${
@@ -383,12 +573,17 @@ export function ConversionCard({
 
               {/* Destination ZIP */}
               <div className="space-y-1.5">
-                <label htmlFor="destination-zip" className="text-xs font-medium text-neutral-300 flex items-center justify-between">
+                <label
+                  htmlFor="destination-zip"
+                  className="text-xs font-medium text-neutral-300 flex items-center justify-between"
+                >
                   <span className="flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-blue-500" />
                     Destination ZIP
                   </span>
-                  <span className="text-[10px] text-neutral-500 font-mono">Moving To</span>
+                  <span className="text-[10px] text-neutral-500 font-mono">
+                    Moving To
+                  </span>
                 </label>
                 <input
                   id="destination-zip"
@@ -397,30 +592,33 @@ export function ConversionCard({
                   value={destinationZip}
                   onChange={(e) => {
                     setDestinationZip(e.target.value.replace(/\D/g, ''));
-                    if (errors.destinationZip) setErrors((prev) => ({ ...prev, destinationZip: '' }));
+                    if (errors.destinationZip)
+                      setErrors((prev) => ({ ...prev, destinationZip: '' }));
                   }}
                   placeholder="e.g. 10001"
                   className={`w-full bg-neutral-950 border ${
-                    errors.destinationZip ? 'border-red-500' : 'border-neutral-800'
+                    errors.destinationZip
+                      ? 'border-red-500'
+                      : 'border-neutral-800'
                   } rounded-md px-3 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-700 tabular-nums transition-colors`}
                 />
                 {errors.destinationZip && (
-                  <p className="text-[10px] text-red-400">{errors.destinationZip}</p>
+                  <p className="text-[10px] text-red-400">
+                    {errors.destinationZip}
+                  </p>
                 )}
               </div>
             </div>
 
             {/* STEP 2 EXPANSION: High-Intent Reveal (Move Date & Email) */}
             {step === 2 && (
-              <div className="space-y-3 pt-2 border-t border-neutral-800 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="space-y-3.5 pt-3 border-t border-neutral-800 animate-in fade-in slide-in-from-top-2 duration-200">
                 {/* Route Summary Pill */}
-                <div className="p-2.5 rounded-md bg-neutral-950 border border-neutral-800 text-xs space-y-1">
+                <div className="p-2.5 rounded-lg bg-neutral-950 border border-neutral-800 text-xs space-y-1">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 uppercase font-mono tracking-wider">
                       <span>Verified Route</span>
-                      {pricingResult?.roadMiles && (
-                        <span>• ~{pricingResult.roadMiles.toLocaleString()} miles</span>
-                      )}
+                      <span>• ~{roadMiles.toLocaleString()} miles</span>
                     </div>
                     <button
                       type="button"
@@ -431,15 +629,22 @@ export function ConversionCard({
                     </button>
                   </div>
                   <span className="font-semibold text-white font-mono tabular-nums text-xs truncate block">
-                    {pricingResult?.originPlace ? `${pricingResult.originPlace} (${originZip})` : originZip} → {pricingResult?.destinationPlace ? `${pricingResult.destinationPlace} (${destinationZip})` : destinationZip}
+                    {originPlace ? `${originPlace} (${originZip})` : originZip}{' '}
+                    →{' '}
+                    {destinationPlace
+                      ? `${destinationPlace} (${destinationZip})`
+                      : destinationZip}
                   </span>
                 </div>
 
                 {/* Move Date */}
                 <div className="space-y-1.5">
-                  <label htmlFor="move-date" className="text-xs font-medium text-neutral-300 flex items-center gap-1.5">
+                  <label
+                    htmlFor="move-date"
+                    className="text-xs font-medium text-neutral-300 flex items-center gap-1.5"
+                  >
                     <Calendar className="w-3.5 h-3.5 text-neutral-400" />
-                    Move Date
+                    Target Move Date
                   </label>
                   <input
                     id="move-date"
@@ -448,22 +653,33 @@ export function ConversionCard({
                     value={moveDate}
                     onChange={(e) => {
                       setMoveDate(e.target.value);
-                      if (errors.moveDate) setErrors((prev) => ({ ...prev, moveDate: '' }));
+                      if (errors.moveDate)
+                        setErrors((prev) => ({ ...prev, moveDate: '' }));
                     }}
                     className={`w-full bg-neutral-950 border ${
                       errors.moveDate ? 'border-red-500' : 'border-neutral-800'
                     } rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-neutral-700 transition-colors`}
                   />
                   {errors.moveDate && (
-                    <p className="text-[10px] text-red-400">{errors.moveDate}</p>
+                    <p className="text-[10px] text-red-400">
+                      {errors.moveDate}
+                    </p>
                   )}
                 </div>
 
-                {/* Email Address */}
+                {/* Contact Email */}
                 <div className="space-y-1.5">
-                  <label htmlFor="lead-email" className="text-xs font-medium text-neutral-300 flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-neutral-400" />
-                    Contact Email
+                  <label
+                    htmlFor="lead-email"
+                    className="text-xs font-medium text-neutral-300 flex items-center justify-between"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-neutral-400" />
+                      Contact Email
+                    </span>
+                    <span className="text-[10px] text-neutral-500">
+                      For Blueprint &amp; Rates
+                    </span>
                   </label>
                   <input
                     id="lead-email"
@@ -471,7 +687,8 @@ export function ConversionCard({
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
-                      if (errors.email) setErrors((prev) => ({ ...prev, email: '' }));
+                      if (errors.email)
+                        setErrors((prev) => ({ ...prev, email: '' }));
                     }}
                     placeholder="name@company.com"
                     className={`w-full bg-neutral-950 border ${
@@ -481,6 +698,9 @@ export function ConversionCard({
                   {errors.email && (
                     <p className="text-[10px] text-red-400">{errors.email}</p>
                   )}
+                  <p className="text-[10px] text-neutral-500 leading-tight">
+                    Instant on-screen access to download your Load Manifest PDF.
+                  </p>
                 </div>
               </div>
             )}
@@ -495,7 +715,7 @@ export function ConversionCard({
                 {isCalculatingRoute ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Calculating Rates...</span>
+                    <span>Calculating Road Miles...</span>
                   </>
                 ) : (
                   <span>Compare Rates &amp; Availability &rarr;</span>
@@ -510,7 +730,7 @@ export function ConversionCard({
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Locking Rates...</span>
+                    <span>Generating Manifest &amp; Rates...</span>
                   </>
                 ) : (
                   <span>Lock Rates &amp; Get Manifest &rarr;</span>
@@ -521,13 +741,19 @@ export function ConversionCard({
             {/* 4. Compact Trust Signals */}
             <div className="flex items-center justify-center gap-2.5 pt-2 text-[11px] text-neutral-400">
               <div className="flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" strokeWidth={1.75} />
+                <ShieldCheck
+                  className="w-3.5 h-3.5 text-emerald-500 shrink-0"
+                  strokeWidth={1.75}
+                />
                 <span>USDOT Licensed Carriers</span>
               </div>
               <span className="text-neutral-600">•</span>
               <div className="flex items-center gap-1">
-                <FileCheck className="w-3.5 h-3.5 text-orange-500 shrink-0" strokeWidth={1.75} />
-                <span>18% Buffer Included</span>
+                <FileText
+                  className="w-3.5 h-3.5 text-orange-500 shrink-0"
+                  strokeWidth={1.75}
+                />
+                <span>Instant Load Manifest</span>
               </div>
             </div>
           </form>
@@ -536,3 +762,5 @@ export function ConversionCard({
     </aside>
   );
 }
+
+export default ConversionCard;
