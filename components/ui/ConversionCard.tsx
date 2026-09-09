@@ -206,6 +206,8 @@ export function ConversionCard({
     if (!validateStep1() || !validateStep2()) return;
 
     setIsSubmitting(true);
+    setErrors((prev) => ({ ...prev, form: '' }));
+
     try {
       const response = await fetch('/api/send-plan', {
         method: 'POST',
@@ -230,8 +232,14 @@ export function ConversionCard({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate move plan.');
+        let errorMsg = 'Failed to generate move plan.';
+        try {
+          const errorData = await response.json();
+          if (errorData.error) errorMsg = errorData.error;
+        } catch {
+          errorMsg = `Server error (${response.status}): Could not dispatch blueprint.`;
+        }
+        throw new Error(errorMsg);
       }
 
       const data = await response.json();
@@ -263,9 +271,11 @@ export function ConversionCard({
         cuFt: capacityResult.totalVolumeCuFt,
       });
     } catch (err: unknown) {
-      setErrors({
+      console.error('[QUOTE SUBMISSION ERROR]', err);
+      setErrors((prev) => ({
+        ...prev,
         form: err instanceof Error ? err.message : 'Submission failed. Please try again.',
-      });
+      }));
     } finally {
       setIsSubmitting(false);
     }

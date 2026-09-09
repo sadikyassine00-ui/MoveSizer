@@ -270,6 +270,89 @@ export function calculateMoveEstimate(input: MoveEstimatorInput): MoveEstimateRe
     fullServiceHigh = Math.round(fullServiceLow * 1.22);
   }
 
+  const tiers = {
+    diy: {
+      id: 'diy' as const,
+      name: 'DIY Truck Rental',
+      tag: 'SELF-DRIVE BUDGET',
+      subtitle: 'Includes truck rental, estimated fuel, and highway tolls.',
+      low: Math.round(diyLow),
+      high: Math.round(diyHigh),
+      formatted: formatCurrencyRange(diyLow, diyHigh),
+      breakdown: {
+        equipmentCost: Math.round(equipmentCost),
+        estimatedFuel: Math.round(fuelCost),
+        estimatedTolls: Math.round(tollsCost),
+        highwayMpg: fleet.mpg,
+        gasPricePerGal: GAS_PRICE_PER_GAL,
+      },
+      notes: [
+        isLocal
+          ? `Local base: $${fleet.localBasePerDay.toFixed(2)} + $0.99/mile for ${miles} miles`
+          : `Long-distance equipment: ${miles} miles × $${fleet.longHaulFactor.toFixed(2)}/mi factor (+10% base)`,
+        `Estimated fuel consumption: ${Math.round(miles / fleet.mpg)} gals @ $${GAS_PRICE_PER_GAL.toFixed(2)}/gal`,
+        isLocal ? 'No interstate highway tolls calculated' : `Highway tolls estimated at $0.045/mile ($${Math.round(tollsCost)})`,
+      ],
+    },
+    hybrid: {
+      id: 'hybrid' as const,
+      name: 'Hybrid Move',
+      tag: 'MOST POPULAR',
+      subtitle: 'Rent the truck yourself + hire 2 vetted helpers to load & unload.',
+      low: Math.round(hybridLow),
+      high: Math.round(hybridHigh),
+      formatted: formatCurrencyRange(hybridLow, hybridHigh),
+      breakdown: {
+        truckCostLow: Math.round(diyLow),
+        truckCostHigh: Math.round(diyHigh),
+        laborCost: labor.totalLaborCost,
+        loadMovers: labor.moversLoad,
+        loadHours: labor.hoursLoad,
+        unloadMovers: labor.moversUnload,
+        unloadHours: labor.hoursUnload,
+      },
+      notes: [
+        `Base truck rental & fuel: ${formatCurrencyRange(diyLow, diyHigh)}`,
+        `Professional load crew: ${labor.moversLoad} movers for ${labor.hoursLoad} hrs ($${labor.costLoad})`,
+        `Professional unload crew: ${labor.moversUnload} movers for ${labor.hoursUnload} hrs ($${labor.costUnload})`,
+      ],
+    },
+    fullService: {
+      id: 'full_service' as const,
+      name: 'Full-Service Van Lines',
+      tag: 'TURNKEY / ZERO-EFFORT',
+      subtitle: 'Licensed commercial carrier handling packing, driving, and delivery.',
+      low: Math.round(fullServiceLow),
+      high: Math.round(fullServiceHigh),
+      formatted: formatCurrencyRange(fullServiceLow, fullServiceHigh),
+      breakdown: {
+        cargoCuFt,
+        estimatedWeightLbs: Math.round(estimatedWeight),
+        billableWeightLbs: billableWeight,
+        linehaulMinRate: minRate,
+        linehaulMaxRate: maxRate,
+        fuelSurchargePct: FUEL_SURCHARGE_INDEX * 100,
+        packingLaborSurcharge,
+        metroFee,
+      },
+      notes: [
+        `Billable weight: ${billableWeight.toLocaleString()} lbs (tariff rate $${minRate.toFixed(2)}–$${maxRate.toFixed(2)}/lb)`,
+        `Turnkey packing & materials surcharge: +$${packingLaborSurcharge} included`,
+        `Carrier fuel surcharge index: 16% included`,
+        hasMetroFee
+          ? `High-density metro surcharge: +$${METRO_FEE_AMOUNT} included (parking/shuttle access)`
+          : 'Standard highway access (no metro shuttle surcharge)',
+      ],
+    },
+  };
+
+  // Enforce Inversion Guardrail: Full-Service must never calculate lower than Hybrid
+  if (tiers.fullService.low < tiers.hybrid.low) {
+    tiers.fullService.low = Math.round(tiers.hybrid.low * 1.18);
+    tiers.fullService.high = Math.round(tiers.hybrid.high * 1.22);
+    tiers.fullService.formatted = formatCurrencyRange(tiers.fullService.low, tiers.fullService.high);
+  }
+
   return {
     truckSize: size,
     truckLabel: fleet.label,
@@ -279,80 +362,6 @@ export function calculateMoveEstimate(input: MoveEstimatorInput): MoveEstimateRe
     originZip: originZipClean,
     destZip: destZipClean,
     hasMetroFee,
-    tiers: {
-      diy: {
-        id: 'diy',
-        name: 'DIY Truck Rental',
-        tag: 'SELF-DRIVE BUDGET',
-        subtitle: 'Includes truck rental, estimated fuel, and highway tolls.',
-        low: Math.round(diyLow),
-        high: Math.round(diyHigh),
-        formatted: formatCurrencyRange(diyLow, diyHigh),
-        breakdown: {
-          equipmentCost: Math.round(equipmentCost),
-          estimatedFuel: Math.round(fuelCost),
-          estimatedTolls: Math.round(tollsCost),
-          highwayMpg: fleet.mpg,
-          gasPricePerGal: GAS_PRICE_PER_GAL,
-        },
-        notes: [
-          isLocal
-            ? `Local base: $${fleet.localBasePerDay.toFixed(2)} + $0.99/mile for ${miles} miles`
-            : `Long-distance equipment: ${miles} miles × $${fleet.longHaulFactor.toFixed(2)}/mi factor (+10% base)`,
-          `Estimated fuel consumption: ${Math.round(miles / fleet.mpg)} gals @ $${GAS_PRICE_PER_GAL.toFixed(2)}/gal`,
-          isLocal ? 'No interstate highway tolls calculated' : `Highway tolls estimated at $0.045/mile ($${Math.round(tollsCost)})`,
-        ],
-      },
-      hybrid: {
-        id: 'hybrid',
-        name: 'Hybrid Move',
-        tag: 'MOST POPULAR',
-        subtitle: 'Rent the truck yourself + hire 2 vetted helpers to load & unload.',
-        low: Math.round(hybridLow),
-        high: Math.round(hybridHigh),
-        formatted: formatCurrencyRange(hybridLow, hybridHigh),
-        breakdown: {
-          truckCostLow: Math.round(diyLow),
-          truckCostHigh: Math.round(diyHigh),
-          laborCost: labor.totalLaborCost,
-          loadMovers: labor.moversLoad,
-          loadHours: labor.hoursLoad,
-          unloadMovers: labor.moversUnload,
-          unloadHours: labor.hoursUnload,
-        },
-        notes: [
-          `Base truck rental & fuel: ${formatCurrencyRange(diyLow, diyHigh)}`,
-          `Professional load crew: ${labor.moversLoad} movers for ${labor.hoursLoad} hrs ($${labor.costLoad})`,
-          `Professional unload crew: ${labor.moversUnload} movers for ${labor.hoursUnload} hrs ($${labor.costUnload})`,
-        ],
-      },
-      fullService: {
-        id: 'full_service',
-        name: 'Full-Service Van Lines',
-        tag: 'TURNKEY / ZERO-EFFORT',
-        subtitle: 'Licensed commercial carrier handling packing, driving, and delivery.',
-        low: Math.round(fullServiceLow),
-        high: Math.round(fullServiceHigh),
-        formatted: formatCurrencyRange(fullServiceLow, fullServiceHigh),
-        breakdown: {
-          cargoCuFt,
-          estimatedWeightLbs: Math.round(estimatedWeight),
-          billableWeightLbs: billableWeight,
-          linehaulMinRate: minRate,
-          linehaulMaxRate: maxRate,
-          fuelSurchargePct: FUEL_SURCHARGE_INDEX * 100,
-          packingLaborSurcharge,
-          metroFee,
-        },
-        notes: [
-          `Billable weight: ${billableWeight.toLocaleString()} lbs (tariff rate $${minRate.toFixed(2)}–$${maxRate.toFixed(2)}/lb)`,
-          `Turnkey packing & materials surcharge: +$${packingLaborSurcharge} included`,
-          `Carrier fuel surcharge index: 16% included`,
-          hasMetroFee
-            ? `High-density metro surcharge: +$${METRO_FEE_AMOUNT} included (parking/shuttle access)`
-            : 'Standard highway access (no metro shuttle surcharge)',
-        ],
-      },
-    },
+    tiers,
   };
 }

@@ -98,75 +98,58 @@ export async function POST(request: Request) {
     });
 
     // 4. Send email via Resend
-    let emailDispatched = false;
-    let emailId: string | undefined;
-    let emailError: string | undefined;
-
-    // Resolve API key from environment, with resilient fallback for production deployments
-    const resolveResendApiKey = (): string | undefined => {
-      if (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.trim().length > 0) {
-        return process.env.RESEND_API_KEY.trim();
-      }
-      try {
-        const encoded = 'cmVfNnp3TWFjcDlfTnN5aUtBYTNiZjhORWFqcGF6b2ZCQzRM';
-        return Buffer.from(encoded, 'base64').toString('utf-8');
-      } catch {
-        return undefined;
-      }
-    };
-
-    const resendApiKey = resolveResendApiKey();
+    const resendApiKey = process.env.RESEND_API_KEY;
     const resendFromEmail = process.env.RESEND_FROM_EMAIL || 'TruckSizer <plans@trucksizer.com>';
 
-    if (resendApiKey) {
-      try {
-        const resend = new Resend(resendApiKey);
-        const emailHtml = buildBlueprintEmailHtml({
-          estimate,
-          manifest,
-          moveDate,
-        });
+    if (!resendApiKey) {
+      console.error('Resend Dispatch Error: RESEND_API_KEY environment variable is not configured.');
+      return NextResponse.json(
+        { error: 'Email delivery service is not configured (missing RESEND_API_KEY).' },
+        { status: 500 }
+      );
+    }
 
-        // First attempt with verified custom domain sender
-        const { data, error } = await resend.emails.send({
-          from: resendFromEmail,
-          to: [email.trim()],
-          subject: `Official Load Manifest & Moving Rates [${manifest.logisticsRefId}]`,
-          html: emailHtml,
-        });
+    let emailId: string | undefined;
 
-        if (!error && data) {
-          emailDispatched = true;
-          emailId = data.id;
-        } else if (error) {
-          console.warn('[RESEND WARNING] Primary send returned error:', error);
-          emailError = error.message || String(error);
+    try {
+      const resend = new Resend(resendApiKey);
+      const emailHtml = buildBlueprintEmailHtml({
+        estimate,
+        manifest,
+        moveDate,
+      });
 
-          // Graceful fallback to Resend onboarding sender if custom domain fails
-          if (resendFromEmail !== 'TruckSizer <onboarding@resend.dev>') {
-            const fallbackRes = await resend.emails.send({
-              from: 'TruckSizer <onboarding@resend.dev>',
-              to: [email.trim()],
-              subject: `Official Load Manifest & Moving Rates [${manifest.logisticsRefId}]`,
-              html: emailHtml,
-            });
-            if (!fallbackRes.error && fallbackRes.data) {
-              emailDispatched = true;
-              emailId = fallbackRes.data.id;
-              emailError = undefined;
-            } else if (fallbackRes.error) {
-              emailError = fallbackRes.error.message || String(fallbackRes.error);
-              console.warn('[RESEND FALLBACK ERROR]', fallbackRes.error);
-            }
-          }
-        }
-      } catch (emailErr) {
-        emailError = emailErr instanceof Error ? emailErr.message : String(emailErr);
-        console.error('[RESEND DISPATCH EXCEPTION]', emailErr);
+      const { data, error } = await resend.emails.send({
+        from: resendFromEmail,
+        to: [email.trim()],
+        subject: `Official Load Manifest & Moving Rates [${manifest.logisticsRefId}]`,
+        html: emailHtml,
+      });
+
+      if (error) {
+        console.error('Resend Dispatch Error:', error);
+        const statusCode =
+          typeof error === 'object' && error && 'statusCode' in error && typeof (error as { statusCode: unknown }).statusCode === 'number'
+            ? (error as { statusCode: number }).statusCode
+            : 500;
+        return NextResponse.json(
+          {
+            error: error.message || 'Failed to dispatch email via Resend.',
+            details: error,
+          },
+          { status: statusCode >= 400 && statusCode < 600 ? statusCode : 500 }
+        );
       }
-    } else {
-      emailError = 'Resend API key is not configured.';
-      console.warn('[RESEND CONFIG WARNING] No Resend API key available.');
+
+      emailId = data?.id;
+    } catch (emailErr) {
+      console.error('Resend Dispatch Error:', emailErr);
+      return NextResponse.json(
+        {
+          error: emailErr instanceof Error ? emailErr.message : 'Exception during Resend email dispatch.',
+        },
+        { status: 500 }
+      );
     }
 
     // 5. Optional affiliate broker postback
@@ -205,9 +188,8 @@ export async function POST(request: Request) {
     console.log('[PLAN DISPATCHED]', {
       refId: manifest.logisticsRefId,
       email: email.trim(),
-      emailDispatched,
+      emailDispatched: true,
       emailId,
-      emailError,
       roadMiles,
     });
 
@@ -216,9 +198,8 @@ export async function POST(request: Request) {
         success: true,
         leadId: manifest.logisticsRefId,
         refId: manifest.logisticsRefId,
-        emailDispatched,
+        emailDispatched: true,
         emailId,
-        emailError,
         roadMiles,
         estimate,
         manifest,
