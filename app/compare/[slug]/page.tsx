@@ -5,7 +5,7 @@ import {
   getComparisonSpec,
   getAllComparisonSlugs,
 } from '@/lib/seo/comparisons';
-import { UsableSpecsCallout } from '@/components/truck/UsableSpecsCallout';
+import { UsableSpecsCompareSection } from '@/components/truck/UsableSpecsCompareSection';
 import { CompareVisualizerToggle } from '@/components/truck/CompareVisualizerToggle';
 import { generateFaqSchema } from '@/lib/schema/faqSchema';
 import {
@@ -249,55 +249,8 @@ export default async function ComparisonPage({ params }: Props) {
           </div>
         </section>
 
-        {/* Task 2: Standardized UsableSpecsCallout Component (Side-by-Side Dimensional Callout) */}
-        <section aria-labelledby="usable-specs-comparison-heading" className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Ruler className="w-4 h-4 text-[#0066FF]" />
-            <h2 id="usable-specs-comparison-heading" className="text-lg font-bold text-white">
-              Verified Usable Interior Specs: Side-by-Side Callouts
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <UsableSpecsCallout
-              truckClass={vA.name}
-              deckLength={`${vA.lengthFt} (${vA.interiorLengthIn}″)`}
-              interiorWidth={`${vA.widthFt} (${vA.interiorWidthIn}″)`}
-              interiorHeight={`${vA.heightFt} (${vA.interiorHeightIn}″)`}
-              wheelWellWidth={vA.interiorWidthIn >= 90 ? "4' 1\" (49″)" : "Flush / 4' 2\" (50″)"}
-              wheelWellNote={vA.interiorWidthIn >= 90 ? "Stand mattresses on edge" : "Flat floor / No intrusion"}
-              momsAttic={{
-                hasAttic: vA.hasMomsAttic,
-                dims: vA.atticDims,
-                weightRating: '500 lbs max',
-              }}
-              doorClearance={{
-                width: `${vA.doorRollupWidthIn}″`,
-                height: `${vA.doorRollupHeightIn}″`,
-              }}
-              usableCuFt={vA.usableCuFt}
-              grossCuFt={vA.volumeCuFt}
-            />
-            <UsableSpecsCallout
-              truckClass={vB.name}
-              deckLength={`${vB.lengthFt} (${vB.interiorLengthIn}″)`}
-              interiorWidth={`${vB.widthFt} (${vB.interiorWidthIn}″)`}
-              interiorHeight={`${vB.heightFt} (${vB.interiorHeightIn}″)`}
-              wheelWellWidth={vB.interiorWidthIn >= 90 ? "4' 1\" (49″)" : "Flush / 4' 2\" (50″)"}
-              wheelWellNote={vB.interiorWidthIn >= 90 ? "Stand mattresses on edge" : "Flat floor / No intrusion"}
-              momsAttic={{
-                hasAttic: vB.hasMomsAttic,
-                dims: vB.atticDims,
-                weightRating: '500 lbs max',
-              }}
-              doorClearance={{
-                width: `${vB.doorRollupWidthIn}″`,
-                height: `${vB.doorRollupHeightIn}″`,
-              }}
-              usableCuFt={vB.usableCuFt}
-              grossCuFt={vB.volumeCuFt}
-            />
-          </div>
-        </section>
+        {/* Verified Usable Interior Specs: Side-by-Side Comparison Section */}
+        <UsableSpecsCompareSection vehicleA={vA} vehicleB={vB} />
 
         {/* Task 3: Visual Progress Bar Diff Table for Usable Volume */}
         <section aria-labelledby="volume-progress-heading" className="space-y-4 rounded-xl border border-[#1F242F] bg-[#111318] p-5 shadow-lg">

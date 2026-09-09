@@ -91,7 +91,7 @@ export function UsableSpecsCallout({
       </div>
 
       {/* 7-Point High-Contrast Spec Metric Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 pt-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 pt-5">
         {/* 1. Advertised Class */}
         <div className="p-3.5 rounded-xl bg-[#141720] border border-[#1F242F] flex flex-col justify-between hover:border-[#2D3546] transition-colors">
           <div>

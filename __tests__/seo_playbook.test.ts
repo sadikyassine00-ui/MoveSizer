@@ -252,4 +252,41 @@ describe('SEO Playbook v4.0 - Data Manifest & Programmatic Engine', () => {
       expect(html).toContain(requiredDisclosure);
     });
   });
+
+  describe('Side-by-Side Usable Interior Specs Comparison UX', () => {
+    it('renders UsableSpecsCompareSection with head-to-head metrics and delta calculations without layout crunch', async () => {
+      const React = await import('react');
+      const { renderToStaticMarkup } = await import('react-dom/server');
+      const { UsableSpecsCompareSection } = await import(
+        '@/components/truck/UsableSpecsCompareSection'
+      );
+      const spec = getComparisonSpec('10ft-vs-15ft');
+      expect(spec).not.toBeNull();
+
+      const html = renderToStaticMarkup(
+        React.createElement(UsableSpecsCompareSection, {
+          vehicleA: spec!.vehicleA,
+          vehicleB: spec!.vehicleB,
+        })
+      );
+
+      // Asserts header and mode switcher pills
+      expect(html).toContain('Verified Usable Interior Specs: Side-by-Side Comparison');
+      expect(html).toContain('Direct Comparison');
+      expect(html).toContain(spec!.vehicleA.name);
+      expect(html).toContain(spec!.vehicleB.name);
+
+      // Asserts core dimensions are rendered head-to-head
+      expect(html).toContain('Usable Floor Deck Length');
+      expect(html).toContain('Interior Usable Width');
+      expect(html).toContain('Interior Clearance Height');
+      expect(html).toContain("Mom&#x27;s Attic Cabover Shelf");
+      expect(html).toContain('Usable Cargo Volume');
+
+      // Asserts calculated deltas
+      expect(html).toContain('extra floor deck');
+      expect(html).toContain('more usable storage space');
+    });
+  });
 });
+
