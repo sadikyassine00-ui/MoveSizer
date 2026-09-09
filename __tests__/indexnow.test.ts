@@ -23,7 +23,7 @@ describe('IndexNow Protocol Engine', () => {
 
   it('gathers all programmatic and static URLs (including Clusters A, B, C, D)', () => {
     const urls = getAllSiteUrls('https://www.trucksizer.com');
-    expect(urls.length).toBe(37);
+    expect(urls.length).toBe(38);
 
     // Static pages
     expect(urls).toContain('https://www.trucksizer.com');
@@ -42,6 +42,7 @@ describe('IndexNow Protocol Engine', () => {
 
     // Cluster D: Comparisons
     expect(urls).toContain('https://www.trucksizer.com/compare/10ft-vs-15ft');
+    expect(urls).toContain('https://www.trucksizer.com/compare/10ft-vs-15ft-uhaul');
     expect(urls).toContain('https://www.trucksizer.com/compare/15ft-truck-brands');
 
     // Dwelling routes

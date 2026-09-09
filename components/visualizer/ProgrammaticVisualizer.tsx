@@ -12,25 +12,56 @@ import { CapacityGauge } from '@/components/visualizer/CapacityGauge';
 import { ArrowUpRight, Sparkles } from 'lucide-react';
 
 interface ProgrammaticVisualizerProps {
-  truckId: TruckId;
+  truckId?: TruckId;
   presetId?: PresetId;
+  truckSize?: TruckId | string;
+  presetType?: PresetId | string;
+  preloadedItems?: Record<string, number>;
   className?: string;
   badgeLabel?: string;
+}
+
+function resolveTruckId(raw?: string): TruckId {
+  if (!raw) return '15ft';
+  const clean = raw.toLowerCase().replace(/['"\s]/g, '');
+  if (clean.includes('10') || clean.includes('12')) return '10ft';
+  if (clean.includes('15') || clean.includes('16')) return '15ft';
+  if (clean.includes('20') || clean.includes('22')) return '20ft';
+  if (clean.includes('26')) return '26ft';
+  return '15ft';
+}
+
+function resolvePresetId(raw?: string): PresetId {
+  if (!raw) return 'studio';
+  const clean = raw.toLowerCase();
+  if (clean.includes('studio')) return 'studio';
+  if (clean.includes('1') || clean.includes('2')) return '1-2_bed';
+  if (clean.includes('3') || clean.includes('house')) return '3+_bed';
+  return '1-2_bed';
 }
 
 export default function ProgrammaticVisualizer({
   truckId,
   presetId = 'studio',
+  truckSize,
+  presetType,
+  preloadedItems,
   className = '',
   badgeLabel,
 }: ProgrammaticVisualizerProps) {
   const [selectedBlock, setSelectedBlock] = useState<DrawableBlock | null>(null);
 
-  const truck = TRUCKS[truckId] || TRUCKS['15ft'];
-  const preset = PRESETS[presetId] || PRESETS.studio;
+  const effectiveTruckId = truckId || resolveTruckId(truckSize as string);
+  const effectivePresetId = (presetId || resolvePresetId(presetType as string)) as PresetId;
 
-  // Build inventory from preset
+  const truck = TRUCKS[effectiveTruckId] || TRUCKS['15ft'];
+  const preset = PRESETS[effectivePresetId] || PRESETS.studio;
+
+  // Build inventory from preset or preloadedItems
   const inventory = useMemo(() => {
+    if (preloadedItems && Object.keys(preloadedItems).length > 0) {
+      return { ...preloadedItems };
+    }
     const boxCalc = calculateBoxRequirements({
       bedrooms: preset.bedrooms,
       occupants: preset.occupants,
@@ -43,7 +74,7 @@ export default function ProgrammaticVisualizer({
       box_large: boxCalc.counts.large,
       box_wardrobe: boxCalc.counts.wardrobe,
     };
-  }, [preset]);
+  }, [preset, preloadedItems]);
 
   // Pack the truck
   const { blocks: packedBlocks, unpackedItems } = useMemo(() => {
@@ -55,7 +86,7 @@ export default function ProgrammaticVisualizer({
     return calculateCapacity(truck, inventory);
   }, [inventory, truck]);
 
-  const deepLinkUrl = `/?truck=${truckId}&preset=${presetId}`;
+  const deepLinkUrl = `/?truck=${effectiveTruckId}&preset=${effectivePresetId}`;
 
   return (
     <div

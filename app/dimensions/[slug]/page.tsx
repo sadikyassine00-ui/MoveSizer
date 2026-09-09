@@ -7,6 +7,8 @@ import {
 } from '@/lib/seo/dimensions';
 import { TRUCKS } from '@/lib/constants/trucks';
 import ProgrammaticVisualizer from '@/components/visualizer/ProgrammaticVisualizer';
+import { UsableSpecsCallout } from '@/components/truck/UsableSpecsCallout';
+import { generateFaqSchema } from '@/lib/schema/faqSchema';
 import {
   TrademarkDisclaimerBanner,
   MovingLaborBookingBox,
@@ -25,6 +27,7 @@ import {
   Layers,
   Sparkles,
   Info,
+  HelpCircle,
 } from 'lucide-react';
 
 interface Props {
@@ -50,36 +53,46 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const truckSizeMap: Record<string, string> = {
     'box-truck': 'Box Truck',
-    '10ft-truck': '10ft Truck',
-    '12ft-truck': '12ft Truck',
-    '15ft-truck': '15ft Truck',
-    '16ft-truck': '16ft Truck',
-    '20ft-truck': '20ft Truck',
-    '26ft-truck': '26ft Truck',
+    '10ft-truck': '10ft',
+    '12ft-truck': '12ft',
+    '15ft-truck': '15ft',
+    '16ft-truck': '16ft',
+    '20ft-truck': '20ft',
+    '26ft-truck': '26ft',
     '10ft-uhaul-specs': '10ft U-Haul',
     '15ft-uhaul-specs': '15ft U-Haul',
     '20ft-uhaul-specs': '20ft U-Haul',
     '26ft-uhaul-specs': '26ft U-Haul',
   };
 
-  const truckSize =
+  const sizeLabel =
     truckSizeMap[slug] ||
     (spec.isBrandFlanking
       ? `${spec.dimensions.lengthFeet} U-Haul`
-      : `${spec.dimensions.lengthFeet} Truck`);
+      : `${spec.dimensions.lengthFeet}`);
 
-  let title = `${truckSize} Dimensions: Usable Cu Ft & Clearance Cheat Sheet`;
+  // High-CTR Title Pattern: [Size] Box Truck Dimensions: Inside Usable Space & Cu Ft Guide
+  let title = `${sizeLabel} Box Truck Dimensions: Inside Usable Space & Cu Ft Guide`;
   if (title.length > 59) {
-    title = `${truckSize} Dimensions: Usable Cu Ft & Clearances`;
+    title = `${sizeLabel} Box Truck Dimensions: Inside Usable Space & Cu Ft`;
   }
   if (title.length > 59) {
-    title = `${truckSize} Dimensions: Usable Cu Ft Guide`;
+    title = `${sizeLabel} Truck Dimensions: Inside Usable Space & Cu Ft`;
+  }
+  if (title.length > 59) {
+    title = `${sizeLabel} Dimensions: Inside Usable Space & Cu Ft`;
+  }
+  if (title.length > 59) {
+    title = `${sizeLabel} Dimensions: Inside Usable Space`;
   }
 
-  const descTruck = truckSize.replace(/\s+Truck$/i, '');
-  let description = `Real exterior and interior dimensions for ${descTruck} moving trucks. Compare advertised volume vs. actual usable space before renting.`;
+  // High-CTR Description Pattern: Real interior dimensions for [Size] moving trucks. See exact floor deck length, width between wheel wells, Mom's Attic specs, and doorway clearance.
+  let description = `Real interior dimensions for ${sizeLabel} moving trucks. See exact floor deck length, width between wheel wells, Mom's Attic specs, and doorway clearance.`;
   if (description.length > 154) {
-    description = `Real exterior and interior dimensions for ${descTruck}. Compare advertised volume vs. actual usable space before renting.`;
+    description = `Real interior dimensions for ${sizeLabel} trucks. See exact floor deck length, width between wheel wells, Mom's Attic specs, and doorway clearance.`;
+  }
+  if (description.length > 154) {
+    description = `Real interior dimensions for ${sizeLabel}. See exact floor deck length, width between wheel wells, Mom's Attic specs, and doorway clearance.`;
   }
 
   const canonicalUrl = `${baseUrl}/dimensions/${spec.canonicalSlug}`;
@@ -117,6 +130,42 @@ export default async function DimensionPage({ params }: Props) {
   const dims = spec.dimensions;
   const truckSpec = TRUCKS[spec.truckId] || TRUCKS['15ft'];
 
+  const truckSizeMap: Record<string, string> = {
+    'box-truck': 'Box Truck',
+    '10ft-truck': '10-Foot',
+    '12ft-truck': '12-Foot',
+    '15ft-truck': '15-Foot',
+    '16ft-truck': '16-Foot',
+    '20ft-truck': '20-Foot',
+    '26ft-truck': '26-Foot',
+    '10ft-uhaul-specs': "U-Haul 10'",
+    '15ft-uhaul-specs': "U-Haul 15'",
+    '20ft-uhaul-specs': "U-Haul 20'",
+    '26ft-uhaul-specs': "U-Haul 26'",
+  };
+
+  const truckSizeName = truckSizeMap[slug] || `${dims.lengthFeet} Box Truck`;
+
+  // Dynamic Schema.org FAQPage Questions & Answers
+  const faqItems = [
+    {
+      question: `What are the usable interior dimensions of a ${truckSizeName} box truck?`,
+      answer: `The interior cargo deck measures ${dims.lengthFeet} L × ${dims.widthFeet} W × ${dims.heightFeet} H (${dims.lengthInches}″ × ${dims.widthInches}″ × ${dims.heightInches}″), providing ${dims.usableVolumeCuFt} cu. ft. of usable storage.`,
+    },
+    {
+      question: `Does the ${truckSizeName} truck include a Mom's Attic cabover deck?`,
+      answer: dims.hasAttic
+        ? `Yes. The ${truckSizeName} truck includes a built-in Mom's Attic cabover deck measuring ${dims.atticDims || "36″L × 76″W × 30″H"} with a 500 lb weight rating, designed for fragile items and wardrobe boxes.`
+        : `No. The ${truckSizeName} truck features a flat bulkhead wall without an over-cab shelf, providing continuous floor-to-ceiling clearance.`,
+    },
+    {
+      question: `What is the difference between advertised length and usable deck length?`,
+      answer: `${truckSizeName} refers to the gross vehicle length / nominal class; usable floor deck length is ${dims.lengthFeet} (${dims.lengthInches} inches).`,
+    },
+  ];
+
+  const faqJsonLd = generateFaqSchema(faqItems);
+
   // SoftwareApplication structured data (Tier 3)
   const softwareAppJsonLd = {
     '@context': 'https://schema.org',
@@ -153,6 +202,10 @@ export default async function DimensionPage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
 
       {/* Brand Defense Guardrail (un-closable banner on branded routes) */}
@@ -204,6 +257,27 @@ export default async function DimensionPage({ params }: Props) {
 
       {/* Main Content Area */}
       <main className="max-w-6xl mx-auto w-full px-4 sm:px-8 py-8 space-y-8 flex-1">
+        {/* Task 2: Usable Specs Callout (Interior Measurements & Clearances) */}
+        <UsableSpecsCallout
+          truckClass={truckSizeName}
+          deckLength={`${dims.lengthFeet} (${dims.lengthInches}″)`}
+          interiorWidth={`${dims.widthFeet} (${dims.widthInches}″)`}
+          interiorHeight={`${dims.heightFeet} (${dims.heightInches}″)`}
+          wheelWellWidth={dims.widthInches >= 90 ? "4' 1\" (49″)" : "Flush / 4' 2\" (50″)"}
+          wheelWellNote={dims.widthInches >= 90 ? "Stand mattresses on edge" : "Flat floor / No major intrusion"}
+          momsAttic={{
+            hasAttic: dims.hasAttic,
+            dims: dims.atticDims,
+            weightRating: '500 lbs max',
+          }}
+          doorClearance={{
+            width: `${dims.doorRollupWidthInches}″`,
+            height: `${dims.doorRollupHeightInches}″`,
+          }}
+          usableCuFt={dims.usableVolumeCuFt}
+          grossCuFt={dims.grossVolumeCuFt}
+        />
+
         {/* Tier 1: Above-the-Fold Specs Data Matrix (High-Converting Real-World Fit Cheat Sheet) */}
         <VehicleSpecMatrix spec={spec} />
 
@@ -301,6 +375,22 @@ export default async function DimensionPage({ params }: Props) {
               </li>
             ))}
           </ul>
+        </section>
+
+        {/* Task 1: Visible FAQ Section (Google & Bing Copilot Snippet Optimization) */}
+        <section aria-labelledby="dimensions-faq-heading" className="space-y-4 pt-4 border-t border-[#1F242F]">
+          <h2 id="dimensions-faq-heading" className="text-lg font-bold text-white flex items-center gap-2">
+            <HelpCircle className="w-4 h-4 text-[#0066FF]" />
+            <span>Frequently Asked Questions: {truckSizeName} Dimensions</span>
+          </h2>
+          <div className="space-y-3">
+            {faqItems.map((faq, idx) => (
+              <div key={idx} className="rounded-xl border border-[#1F242F] bg-[#111318] p-4 space-y-1.5 shadow-md">
+                <h3 className="text-sm font-semibold text-white">{faq.question}</h3>
+                <p className="text-xs text-zinc-400 leading-relaxed font-sans">{faq.answer}</p>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* Adjacent Size Navigation Cross-Links */}

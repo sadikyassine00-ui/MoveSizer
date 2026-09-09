@@ -5,7 +5,9 @@ import {
   getComparisonSpec,
   getAllComparisonSlugs,
 } from '@/lib/seo/comparisons';
-import ProgrammaticVisualizer from '@/components/visualizer/ProgrammaticVisualizer';
+import { UsableSpecsCallout } from '@/components/truck/UsableSpecsCallout';
+import { CompareVisualizerToggle } from '@/components/truck/CompareVisualizerToggle';
+import { generateFaqSchema } from '@/lib/schema/faqSchema';
 import {
   MovingLaborBookingBox,
   RentalSavingsBanner,
@@ -19,10 +21,12 @@ import {
   Home,
   ShieldCheck,
   Check,
-  X,
   HelpCircle,
   Sparkles,
   ArrowRight,
+  Layers,
+  Ruler,
+  Truck,
 } from 'lucide-react';
 
 interface Props {
@@ -38,7 +42,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const spec = getComparisonSpec(slug);
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com').replace(/\/$/, '');
+  const baseUrl = 'https://trucksizer.com';
 
   if (!spec) {
     return {
@@ -46,25 +50,58 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
+  const shortNames: Record<string, { a: string; b: string }> = {
+    '10ft-vs-15ft': { a: '10ft', b: '15ft' },
+    '10ft-vs-15ft-uhaul': { a: '10ft', b: '15ft U-Haul' },
+    '15ft-vs-20ft': { a: '15ft', b: '20ft' },
+    '15ft-truck-brands': { a: '15ft', b: '16ft Brands' },
+  };
+
+  const pair = shortNames[spec.canonicalSlug] || {
+    a: spec.vehicleA.name.replace(/ moving truck| box truck| truck/gi, ''),
+    b: spec.vehicleB.name.replace(/ moving truck| box truck| truck/gi, ''),
+  };
+
+  // High-CTR Title Pattern: [Truck A] vs [Truck B]: Usable Interior Size & Spec Comparison
+  let title = `${pair.a} vs ${pair.b}: Usable Interior Size & Spec Comparison`;
+  if (title.length > 59) {
+    title = `${pair.a} vs ${pair.b}: Usable Interior Size & Specs`;
+  }
+  if (title.length > 59) {
+    title = `${pair.a} vs ${pair.b}: Interior Size & Spec Comparison`;
+  }
+  if (title.length > 59) {
+    title = `${pair.a} vs ${pair.b}: Size & Spec Comparison`;
+  }
+
+  // High-CTR Description Pattern: Compare [Truck A] vs [Truck B]. Visual interior dimensions, cubic volume differences, ramp specs, and which size fits your move.
+  let description = `Compare ${pair.a} vs ${pair.b}. Visual interior dimensions, cubic volume differences, ramp specs, and which size fits your move.`;
+  if (description.length > 154) {
+    description = `Compare ${pair.a} vs ${pair.b}. Interior dimensions, cubic volume differences, ramp specs, and which size fits your move.`;
+  }
+  if (description.length > 154) {
+    description = `Compare ${pair.a} vs ${pair.b}. Visual interior dimensions, volume differences, and which size fits your move.`;
+  }
+
   const canonicalUrl = `${baseUrl}/compare/${spec.canonicalSlug}`;
 
   return {
-    title: spec.title,
-    description: spec.metaDescription,
+    title,
+    description,
     alternates: {
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: spec.title,
-      description: spec.metaDescription,
+      title,
+      description,
       url: canonicalUrl,
       type: 'article',
       siteName: 'TruckSizer',
     },
     twitter: {
       card: 'summary_large_image',
-      title: spec.title,
-      description: spec.metaDescription,
+      title,
+      description,
     },
   };
 }
@@ -72,7 +109,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ComparisonPage({ params }: Props) {
   const { slug } = await params;
   const spec = getComparisonSpec(slug);
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.trucksizer.com').replace(/\/$/, '');
+  const baseUrl = 'https://trucksizer.com';
 
   if (!spec) {
     notFound();
@@ -80,6 +117,31 @@ export default async function ComparisonPage({ params }: Props) {
 
   const vA = spec.vehicleA;
   const vB = spec.vehicleB;
+
+  // Task 1: Direct Schema.org FAQPage structured data comparing both models
+  const compareFaqItems = [
+    {
+      question: `What is the usable cargo capacity difference between the ${vA.name} and ${vB.name}?`,
+      answer: `The ${vA.name} provides ${vA.usableCuFt} cu. ft. of usable capacity (${vA.volumeCuFt} gross), while the ${vB.name} offers ${vB.usableCuFt} cu. ft. of usable capacity (${vB.volumeCuFt} gross). The ${vB.name} yields an additional ${vB.usableCuFt - vA.usableCuFt} cu. ft. of usable space after accounting for the standard 18% real-world loading safety buffer.`,
+    },
+    {
+      question: `How do the loading deck heights and ramps compare between ${vA.name} and ${vB.name}?`,
+      answer: `The ${vA.name} cargo floor sits ${vA.deckHeightIn} inches off the ground (${vA.hasLoadingRamp ? 'includes loading ramp' : 'no ramp included'}), while the ${vB.name} deck sits at ${vB.deckHeightIn} inches (${vB.hasLoadingRamp ? 'includes loading ramp' : 'no ramp included'}).`,
+    },
+    {
+      question: `What are the roll-up door opening clearances for ${vA.name} vs ${vB.name}?`,
+      answer: `The ${vA.name} roll-up door opening clearance is ${vA.doorRollupWidthIn}″ W × ${vA.doorRollupHeightIn}″ H, compared to ${vB.doorRollupWidthIn}″ W × ${vB.doorRollupHeightIn}″ H on the ${vB.name}.`,
+    },
+    {
+      question: `Does either truck include a Mom's Attic cabover shelf?`,
+      answer: vA.hasMomsAttic === vB.hasMomsAttic
+        ? `Both vehicles ${vA.hasMomsAttic ? 'feature' : 'do not feature'} an elevated Mom's Attic compartment over the cab.`
+        : `${vB.hasMomsAttic ? vB.name : vA.name} features an elevated Mom's Attic cabover compartment (rated for up to 500 lbs), whereas the ${vB.hasMomsAttic ? vA.name : vB.name} has a flat cab bulkhead without an over-cab shelf.`,
+    },
+    ...spec.faqList,
+  ];
+
+  const faqJsonLd = generateFaqSchema(compareFaqItems);
 
   // Schema.org SoftwareApplication (Tier 3)
   const softwareAppJsonLd = {
@@ -104,6 +166,8 @@ export default async function ComparisonPage({ params }: Props) {
     ],
   };
 
+  const maxVolume = Math.max(vA.usableCuFt, vB.usableCuFt, 100);
+
   return (
     <div className="min-h-screen bg-[#090A0C] text-[#F8F9FA] flex flex-col font-sans">
       {/* Tier 3: Schema.org Structured Data */}
@@ -117,6 +181,10 @@ export default async function ComparisonPage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
 
       {/* Header */}
@@ -177,6 +245,114 @@ export default async function ComparisonPage({ params }: Props) {
               <p className="text-xs sm:text-sm text-zinc-200 mt-1 leading-relaxed font-medium">
                 {spec.bottomLineVerdict}
               </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Task 2: Standardized UsableSpecsCallout Component (Side-by-Side Dimensional Callout) */}
+        <section aria-labelledby="usable-specs-comparison-heading" className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Ruler className="w-4 h-4 text-[#0066FF]" />
+            <h2 id="usable-specs-comparison-heading" className="text-lg font-bold text-white">
+              Verified Usable Interior Specs: Side-by-Side Callouts
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <UsableSpecsCallout
+              truckClass={vA.name}
+              deckLength={`${vA.lengthFt} (${vA.interiorLengthIn}″)`}
+              interiorWidth={`${vA.widthFt} (${vA.interiorWidthIn}″)`}
+              interiorHeight={`${vA.heightFt} (${vA.interiorHeightIn}″)`}
+              wheelWellWidth={vA.interiorWidthIn >= 90 ? "4' 1\" (49″)" : "Flush / 4' 2\" (50″)"}
+              wheelWellNote={vA.interiorWidthIn >= 90 ? "Stand mattresses on edge" : "Flat floor / No intrusion"}
+              momsAttic={{
+                hasAttic: vA.hasMomsAttic,
+                dims: vA.atticDims,
+                weightRating: '500 lbs max',
+              }}
+              doorClearance={{
+                width: `${vA.doorRollupWidthIn}″`,
+                height: `${vA.doorRollupHeightIn}″`,
+              }}
+              usableCuFt={vA.usableCuFt}
+              grossCuFt={vA.volumeCuFt}
+            />
+            <UsableSpecsCallout
+              truckClass={vB.name}
+              deckLength={`${vB.lengthFt} (${vB.interiorLengthIn}″)`}
+              interiorWidth={`${vB.widthFt} (${vB.interiorWidthIn}″)`}
+              interiorHeight={`${vB.heightFt} (${vB.interiorHeightIn}″)`}
+              wheelWellWidth={vB.interiorWidthIn >= 90 ? "4' 1\" (49″)" : "Flush / 4' 2\" (50″)"}
+              wheelWellNote={vB.interiorWidthIn >= 90 ? "Stand mattresses on edge" : "Flat floor / No intrusion"}
+              momsAttic={{
+                hasAttic: vB.hasMomsAttic,
+                dims: vB.atticDims,
+                weightRating: '500 lbs max',
+              }}
+              doorClearance={{
+                width: `${vB.doorRollupWidthIn}″`,
+                height: `${vB.doorRollupHeightIn}″`,
+              }}
+              usableCuFt={vB.usableCuFt}
+              grossCuFt={vB.volumeCuFt}
+            />
+          </div>
+        </section>
+
+        {/* Task 3: Visual Progress Bar Diff Table for Usable Volume */}
+        <section aria-labelledby="volume-progress-heading" className="space-y-4 rounded-xl border border-[#1F242F] bg-[#111318] p-5 shadow-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h2 id="volume-progress-heading" className="text-base font-bold text-white flex items-center gap-2">
+                <Layers className="w-4 h-4 text-[#10B981]" />
+                <span>Volumetric Capacity &amp; Usable Space Differential</span>
+              </h2>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Visual cubic footage volume breakdown including mandatory 18% real-world packing buffer.
+              </p>
+            </div>
+            <div className="px-2.5 py-1 rounded bg-[#10B981]/15 border border-[#10B981]/30 text-[#10B981] text-xs font-mono font-bold self-start sm:self-auto">
+              +{vB.usableCuFt - vA.usableCuFt} cu ft (+{Math.round(((vB.usableCuFt - vA.usableCuFt) / vA.usableCuFt) * 100)}% More Usable Space)
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-2">
+            {/* Vehicle A Volume Bar */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs font-mono">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <Truck className="w-3.5 h-3.5 text-[#0066FF]" />
+                  <span>{vA.name}</span>
+                </span>
+                <span className="text-zinc-300">
+                  <strong className="text-[#0066FF]">{vA.usableCuFt} cu ft usable</strong> / {vA.volumeCuFt} gross
+                </span>
+              </div>
+              <div className="h-3.5 w-full bg-[#090A0C] rounded-full overflow-hidden p-0.5 border border-[#1F242F]">
+                <div
+                  className="h-full bg-gradient-to-r from-[#0066FF] to-[#38BDF8] rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, (vA.usableCuFt / maxVolume) * 100)}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Vehicle B Volume Bar */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs font-mono">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <Truck className="w-3.5 h-3.5 text-[#10B981]" />
+                  <span>{vB.name} (Recommended)</span>
+                </span>
+                <span className="text-zinc-300">
+                  <strong className="text-[#10B981]">{vB.usableCuFt} cu ft usable</strong> / {vB.volumeCuFt} gross
+                </span>
+              </div>
+              <div className="h-3.5 w-full bg-[#090A0C] rounded-full overflow-hidden p-0.5 border border-[#1F242F]">
+                <div
+                  className="h-full bg-gradient-to-r from-[#10B981] to-[#34D399] rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, (vB.usableCuFt / maxVolume) * 100)}%` }}
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -242,6 +418,7 @@ export default async function ComparisonPage({ params }: Props) {
                     <th className="py-3 px-4 font-semibold">Interior Dims</th>
                     <th className="py-3 px-4 font-semibold">Deck Height</th>
                     <th className="py-3 px-4 font-semibold">Ramp &amp; Attic</th>
+                    <th className="py-3 px-4 font-semibold">Side Door</th>
                     <th className="py-3 px-4 font-semibold">Standout Advantage</th>
                   </tr>
                 </thead>
@@ -258,6 +435,13 @@ export default async function ComparisonPage({ params }: Props) {
                       <td className="py-3 px-4 text-xs font-sans">
                         {row.rampIncluded ? 'Ramp: Yes' : 'Ramp: No'} &bull; {row.momsAttic ? 'Attic: Yes' : 'Attic: No'}
                       </td>
+                      <td className="py-3 px-4 text-xs font-sans">
+                        {row.sideDoorAvailable ? (
+                          <span className="text-[#10B981] font-semibold">Available</span>
+                        ) : (
+                          <span className="text-zinc-500">None</span>
+                        )}
+                      </td>
                       <td className="py-3 px-4 text-xs font-sans text-zinc-300">{row.standoutAdvantage}</td>
                     </tr>
                   ))}
@@ -267,23 +451,16 @@ export default async function ComparisonPage({ params }: Props) {
           </section>
         )}
 
-        {/* Tier 2: Interactive Visualizer Simulation of Vehicle B */}
+        {/* Task 3 & 4: Interactive 2.5D Load Verification with Toggle between Vehicle A and Vehicle B */}
         <section aria-labelledby="visual-fit-heading" className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 id="visual-fit-heading" className="text-lg font-bold text-white flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#0066FF]" />
-              <span>Interactive 2.5D Load Verification: {vB.name}</span>
+              <span>Interactive 2.5D Load Verification &amp; Sizer Comparison</span>
             </h2>
-            <div className="text-xs text-zinc-400 font-mono">
-              Pre-packed with {vB.idealDwelling}
-            </div>
           </div>
 
-          <ProgrammaticVisualizer
-            truckId={vB.truckId}
-            presetId={vB.defaultPreset}
-            badgeLabel={`Visual Proof: ${vB.name}`}
-          />
+          <CompareVisualizerToggle vehicleA={vA} vehicleB={vB} />
         </section>
 
         {/* CRO Monetization: Moving Labor Helper Box */}
@@ -370,10 +547,10 @@ export default async function ComparisonPage({ params }: Props) {
             <span>Frequently Asked Questions</span>
           </h2>
           <div className="space-y-3">
-            {spec.faqList.map((faq, idx) => (
-              <div key={idx} className="rounded-xl border border-[#1F242F] bg-[#111318] p-4 space-y-1.5">
+            {compareFaqItems.map((faq, idx) => (
+              <div key={idx} className="rounded-xl border border-[#1F242F] bg-[#111318] p-4 space-y-1.5 shadow-md">
                 <h3 className="text-sm font-semibold text-white">{faq.question}</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">{faq.answer}</p>
+                <p className="text-xs text-zinc-400 leading-relaxed font-sans">{faq.answer}</p>
               </div>
             ))}
           </div>

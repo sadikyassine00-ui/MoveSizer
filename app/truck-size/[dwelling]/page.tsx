@@ -185,6 +185,8 @@ export default async function DwellingPage({ params }: Props) {
         <AppShell
           initialPreset={config.presetId}
           initialTruckId={config.truckId}
+          presetType={config.presetId}
+          truckSize={config.truckId}
         />
       </main>
 

@@ -20,23 +20,57 @@ import { Layers, FileText, ChevronUp, ChevronDown, CheckCircle2, AlertTriangle }
 interface AppShellProps {
   initialPreset?: PresetId;
   initialTruckId?: TruckId;
+  truckSize?: TruckId | string;
+  presetType?: PresetId | string;
+  preloadedItems?: Record<string, number>;
+}
+
+function resolveTruckId(raw?: string): TruckId | undefined {
+  if (!raw) return undefined;
+  const clean = raw.toLowerCase().replace(/['"\s]/g, '');
+  if (clean.includes('10') || clean.includes('12')) return '10ft';
+  if (clean.includes('15') || clean.includes('16')) return '15ft';
+  if (clean.includes('20') || clean.includes('22')) return '20ft';
+  if (clean.includes('26')) return '26ft';
+  return undefined;
+}
+
+function resolvePresetId(raw?: string): PresetId | undefined {
+  if (!raw) return undefined;
+  const clean = raw.toLowerCase();
+  if (clean.includes('studio')) return 'studio';
+  if (clean.includes('1') || clean.includes('2')) return '1-2_bed';
+  if (clean.includes('3') || clean.includes('house')) return '3+_bed';
+  return undefined;
 }
 
 export function AppShell({
   initialPreset = 'studio',
   initialTruckId,
+  truckSize,
+  presetType,
+  preloadedItems,
 }: AppShellProps) {
-  const [selectedTruckId, setSelectedTruckId] = useState<TruckId>(
-    initialTruckId || PRESETS[initialPreset]?.defaultTruck || '10ft'
-  );
-  const [selectedPreset, setSelectedPreset] = useState<PresetId | null>(initialPreset);
-  const [bedrooms, setBedrooms] = useState<number>(PRESETS[initialPreset]?.bedrooms || 0);
-  const [occupants, setOccupants] = useState<number>(PRESETS[initialPreset]?.occupants || 1);
+  const effectivePreset: PresetId =
+    resolvePresetId(presetType as string) || initialPreset || 'studio';
+  const effectiveTruckId: TruckId =
+    resolveTruckId(truckSize as string) ||
+    initialTruckId ||
+    PRESETS[effectivePreset]?.defaultTruck ||
+    '10ft';
+
+  const [selectedTruckId, setSelectedTruckId] = useState<TruckId>(effectiveTruckId);
+  const [selectedPreset, setSelectedPreset] = useState<PresetId | null>(effectivePreset);
+  const [bedrooms, setBedrooms] = useState<number>(PRESETS[effectivePreset]?.bedrooms || 0);
+  const [occupants, setOccupants] = useState<number>(PRESETS[effectivePreset]?.occupants || 1);
   const [density, setDensity] = useState<DensityLevel>('standard');
   const [unitSystem, setUnitSystem] = useState<'imperial' | 'metric'>('imperial');
 
   const [inventory, setInventory] = useState<Record<string, number>>(() => {
-    const p = PRESETS[initialPreset] || PRESETS.studio;
+    if (preloadedItems && Object.keys(preloadedItems).length > 0) {
+      return { ...preloadedItems };
+    }
+    const p = PRESETS[effectivePreset] || PRESETS.studio;
     const boxCalc = calculateBoxRequirements({
       bedrooms: p.bedrooms,
       occupants: p.occupants,
@@ -113,6 +147,28 @@ export function AppShell({
     },
     [density]
   );
+
+  // Auto-hydrate state from URL query parameters (e.g. ?truck=15ft&preset=1-2_bed)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const search = new URLSearchParams(window.location.search);
+      const urlTruck = search.get('truck') || search.get('truckSize') || search.get('size');
+      const urlPreset = search.get('preset') || search.get('presetType') || search.get('load');
+
+      const parsedTruck = resolveTruckId(urlTruck || undefined);
+      const parsedPreset = resolvePresetId(urlPreset || undefined);
+
+      if (parsedPreset) {
+        handleSelectPreset(parsedPreset);
+      }
+      if (parsedTruck) {
+        setSelectedTruckId(parsedTruck);
+      }
+    } catch {
+      // safe fallback for SSR
+    }
+  }, [handleSelectPreset]);
 
   const updateBoxEstimates = useCallback(
     (newBeds: number, newOccs: number, newDens: DensityLevel) => {
